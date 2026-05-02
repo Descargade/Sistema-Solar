@@ -24,6 +24,12 @@ export interface PlanetData {
   realDiameter: string;
   moonsCount: number;
   fact: string;
+  curiosities: string[];
+  rotationPeriod: string;
+  orbitalPeriod: string;
+  avgTemperature: string;
+  comparison: string;
+  narration: string;
   satellites: SatelliteData[];
   hasRings?: boolean;
   ringInner?: number;
@@ -31,7 +37,7 @@ export interface PlanetData {
   ringColor?: string;
   ringOpacity?: number;
   tilt?: number;
-  textureType: 'solid' | 'stripes' | 'rocky' | 'gas' | 'ice';
+  textureType: 'solid' | 'stripes' | 'rocky' | 'gas' | 'ice' | 'earth' | 'venus' | 'jupiter' | 'saturn' | 'mars' | 'mercury' | 'uranus' | 'neptune';
   stripeColors?: string[];
 }
 
@@ -44,14 +50,25 @@ export const PLANETS: PlanetData[] = [
     orbitSpeed: 0.48,
     rotationSpeed: 0.017,
     color: '#b5b5b5',
-    emissive: '#222222',
+    emissive: '#111111',
     description: 'El planeta más pequeño y cercano al Sol. Su superficie está cubierta de cráteres y experimenta temperaturas extremas: 430°C de día y -180°C de noche.',
     realDistance: '57.9 millones de km',
     realDiameter: '4,879 km',
     moonsCount: 0,
-    fact: 'Un año en Mercurio dura solo 88 días terrestres.',
+    fact: 'Un año en Mercurio dura solo 88 días terrestres, pero un día dura 59 días terrestres.',
+    curiosities: [
+      'Tiene el segundo mayor rango de temperatura del Sistema Solar.',
+      'Su núcleo de hierro ocupa el 85% de su radio, mucho más que cualquier otro planeta.',
+      'A pesar de ser el más cercano al Sol, Venus es más caliente.',
+      'Tiene una exosfera en lugar de una atmósfera verdadera.',
+    ],
+    rotationPeriod: '58.6 días terrestres',
+    orbitalPeriod: '88 días terrestres',
+    avgTemperature: '167°C (promedio)',
+    comparison: 'Ligeramente más grande que la Luna de la Tierra',
+    narration: 'Nos acercamos a Mercurio, el planeta más pequeño del Sistema Solar y el más cercano al Sol. A pesar de su proximidad a nuestra estrella, no es el planeta más caliente. Su superficie está cubierta de cráteres y experimenta temperaturas extremas de hasta 430 grados durante el día y 180 bajo cero de noche.',
     satellites: [],
-    textureType: 'rocky',
+    textureType: 'mercury',
   },
   {
     id: 'venus',
@@ -62,14 +79,25 @@ export const PLANETS: PlanetData[] = [
     rotationSpeed: -0.004,
     color: '#e8c47a',
     emissive: '#3a2a00',
-    atmosphereColor: '#f5deb3',
+    atmosphereColor: '#f5e0a0',
     description: 'El planeta más caliente del Sistema Solar con temperaturas que alcanzan los 465°C. Su densa atmósfera de CO₂ produce un efecto invernadero extremo.',
     realDistance: '108.2 millones de km',
     realDiameter: '12,104 km',
     moonsCount: 0,
-    fact: 'Venus rota en sentido contrario al resto de los planetas.',
+    fact: 'Venus gira en sentido contrario al resto de los planetas y un día venusiano dura más que su año.',
+    curiosities: [
+      'Venus rota en sentido retrógrado: el Sol sale por el oeste y se pone por el este.',
+      'La presión atmosférica en la superficie es 90 veces mayor que en la Tierra.',
+      'Las sondas soviéticas Venera sobrevivieron menos de dos horas en su superficie.',
+      'Tiene más volcanes que cualquier otro planeta del Sistema Solar.',
+    ],
+    rotationPeriod: '243 días terrestres',
+    orbitalPeriod: '225 días terrestres',
+    avgTemperature: '465°C',
+    comparison: 'Similar en tamaño a la Tierra (95% de su diámetro)',
+    narration: 'Pasamos por Venus, el planeta más brillante del cielo nocturno y el más caliente del Sistema Solar. Su densa atmósfera de dióxido de carbono atrapa el calor del Sol, creando un efecto invernadero descontrolado que eleva las temperaturas a 465 grados. Ninguna sonda ha sobrevivido más de dos horas en su superficie.',
     satellites: [],
-    textureType: 'solid',
+    textureType: 'venus',
   },
   {
     id: 'earth',
@@ -85,7 +113,18 @@ export const PLANETS: PlanetData[] = [
     realDistance: '149.6 millones de km',
     realDiameter: '12,742 km',
     moonsCount: 1,
-    fact: 'La Tierra es el planeta con mayor densidad del Sistema Solar.',
+    fact: 'La Tierra es el único planeta conocido que alberga vida. El 71% de su superficie está cubierta de agua.',
+    curiosities: [
+      'La Tierra tiene un campo magnético que nos protege del viento solar.',
+      'Es el planeta más denso del Sistema Solar.',
+      'La Luna estabiliza la inclinación del eje terrestre, haciéndola más habitable.',
+      'Tiene tectónica de placas activa, algo único en el Sistema Solar.',
+    ],
+    rotationPeriod: '23 horas 56 minutos',
+    orbitalPeriod: '365.25 días',
+    avgTemperature: '15°C',
+    comparison: 'El planeta de referencia del Sistema Solar',
+    narration: 'Llegamos a la Tierra, nuestro hogar. Es el único planeta conocido que alberga vida. Desde aquí podemos ver los océanos azules que cubren el 71% de la superficie, los continentes verdes y marrones, y la delgada capa de atmósfera que protege toda forma de vida. En órbita, podemos ver satélites artificiales como la Estación Espacial Internacional y el Telescopio Hubble.',
     satellites: [
       {
         id: 'luna',
@@ -95,40 +134,40 @@ export const PLANETS: PlanetData[] = [
         orbitSpeed: 1.0,
         color: '#aaaaaa',
         isArtificial: false,
-        description: 'El único satélite natural de la Tierra. Estabiliza el eje de rotación terrestre y genera las mareas.',
+        description: 'El único satélite natural de la Tierra. Estabiliza el eje de rotación terrestre y genera las mareas. Tiene una cara que siempre da a la Tierra (rotación sincrónica).',
       },
       {
         id: 'iss',
         name: 'ISS',
-        radius: 0.06,
-        orbitRadius: 1.15,
-        orbitSpeed: 15.0,
-        color: '#e0e0ff',
+        radius: 0.07,
+        orbitRadius: 1.12,
+        orbitSpeed: 16.0,
+        color: '#e0e8ff',
         isArtificial: true,
-        description: 'Estación Espacial Internacional. Laboratorio orbital que orbita a 408 km de altitud a 27,600 km/h.',
+        description: 'Estación Espacial Internacional. Laboratorio orbital a 408 km de altitud que viaja a 27,600 km/h. Ha albergado astronautas de 19 países desde el año 2000.',
       },
       {
         id: 'hubble',
         name: 'Hubble',
-        radius: 0.055,
+        radius: 0.06,
         orbitRadius: 1.22,
-        orbitSpeed: 12.5,
+        orbitSpeed: 13.0,
         color: '#c8d8f0',
         isArtificial: true,
-        description: 'Telescopio Espacial Hubble. Observatorio orbital que ha revolucionado nuestra comprensión del universo desde 1990.',
+        description: 'Telescopio Espacial Hubble. En órbita desde 1990 a 547 km de altitud. Ha capturado imágenes que revolucionaron nuestra comprensión del universo.',
       },
       {
         id: 'arsat1',
         name: 'ARSAT-1',
-        radius: 0.05,
-        orbitRadius: 2.5,
+        radius: 0.055,
+        orbitRadius: 2.6,
         orbitSpeed: 0.29,
         color: '#ffd700',
         isArtificial: true,
-        description: 'Primer satélite geoestacionario argentino. Lanzado en 2014, provee servicios de telecomunicaciones para Sudamérica.',
+        description: 'Primer satélite geoestacionario argentino, lanzado en 2014 desde Kourou. Orbita a 35,786 km de altitud y provee servicios de telecomunicaciones para Argentina y Sudamérica.',
       },
     ],
-    textureType: 'solid',
+    textureType: 'earth',
   },
   {
     id: 'mars',
@@ -139,11 +178,23 @@ export const PLANETS: PlanetData[] = [
     rotationSpeed: 0.71,
     color: '#c1440e',
     emissive: '#3a1000',
-    description: 'El planeta rojo. Hogar del Monte Olimpo, el volcán más alto del Sistema Solar (21 km). Posee una delgada atmósfera de CO₂.',
+    atmosphereColor: '#ff8844',
+    description: 'El planeta rojo. Hogar del Monte Olimpo, el volcán más alto del Sistema Solar (21 km). Posee una delgada atmósfera de CO₂ y dos pequeñas lunas.',
     realDistance: '227.9 millones de km',
     realDiameter: '6,779 km',
     moonsCount: 2,
-    fact: 'Un día en Marte (sol) dura 24 horas y 37 minutos, similar a la Tierra.',
+    fact: 'El Monte Olimpo en Marte mide 21 km de altura, casi tres veces el Everest.',
+    curiosities: [
+      'El Valle Marineris es un cañón tan grande que cruzaría todo Estados Unidos.',
+      'Marte tiene las mayores tormentas de polvo del Sistema Solar, que pueden durar meses.',
+      'En Marte hubo agua líquida hace más de 3,000 millones de años.',
+      'Un día en Marte (sol) dura solo 37 minutos más que en la Tierra.',
+    ],
+    rotationPeriod: '24 horas 37 minutos',
+    orbitalPeriod: '687 días terrestres',
+    avgTemperature: '-60°C (promedio)',
+    comparison: 'La mitad del tamaño de la Tierra',
+    narration: 'Entramos a la órbita de Marte, el planeta rojo. Su color característico se debe al óxido de hierro en su superficie. Aquí se encuentra el Monte Olimpo, el volcán más alto del Sistema Solar con 21 kilómetros de altura. Científicos creen que hace miles de millones de años Marte tuvo océanos de agua líquida.',
     satellites: [
       {
         id: 'fobos',
@@ -152,7 +203,7 @@ export const PLANETS: PlanetData[] = [
         orbitRadius: 1.2,
         orbitSpeed: 3.5,
         color: '#888888',
-        description: 'El satélite más grande de Marte. Orbita tan cerca que algún día será destruido por las fuerzas gravitacionales.',
+        description: 'La luna más grande de Marte. Orbita tan rápido y tan cerca que se ve el Sol salir dos veces en un día marciano. En 50 millones de años será destruida por las mareas gravitacionales.',
       },
       {
         id: 'deimos',
@@ -161,10 +212,10 @@ export const PLANETS: PlanetData[] = [
         orbitRadius: 1.8,
         orbitSpeed: 1.8,
         color: '#999999',
-        description: 'El satélite más pequeño de Marte. Tiene una órbita más estable y se aleja lentamente del planeta.',
+        description: 'La luna más pequeña de Marte. Desde su superficie, Marte cubre 1,200 veces más cielo que la Luna desde la Tierra. Podría ser un asteroide capturado.',
       },
     ],
-    textureType: 'rocky',
+    textureType: 'mars',
   },
   {
     id: 'jupiter',
@@ -179,7 +230,18 @@ export const PLANETS: PlanetData[] = [
     realDistance: '778.5 millones de km',
     realDiameter: '139,820 km',
     moonsCount: 95,
-    fact: 'Júpiter tiene más de el doble de masa que todos los demás planetas juntos.',
+    fact: 'La Gran Mancha Roja de Júpiter es una tormenta que lleva activa más de 350 años y es dos veces más grande que la Tierra.',
+    curiosities: [
+      'Júpiter es tan masivo que el Sol y Júpiter orbitan alrededor de un punto fuera del Sol.',
+      'Actúa como "aspiradora" cósmica, atrayendo asteroides y cometas que podrían chocar con la Tierra.',
+      'Sus lunas galileanas fueron el primer sistema conocido que orbitaba algo que no era la Tierra o el Sol.',
+      'Su campo magnético es 20,000 veces más fuerte que el de la Tierra.',
+    ],
+    rotationPeriod: '9 horas 56 minutos (el más rápido)',
+    orbitalPeriod: '11.9 años terrestres',
+    avgTemperature: '-110°C (nubes superiores)',
+    comparison: '11 veces el diámetro de la Tierra',
+    narration: 'Nos acercamos a Júpiter, el gigante del Sistema Solar. Este planeta es tan masivo que contiene más del doble de la masa de todos los demás planetas combinados. La gran mancha roja que vemos es una tormenta colosal que lleva activa más de 350 años y cabe la Tierra dentro de ella dos veces.',
     satellites: [
       {
         id: 'io',
@@ -188,7 +250,7 @@ export const PLANETS: PlanetData[] = [
         orbitRadius: 2.8,
         orbitSpeed: 2.0,
         color: '#ffcc44',
-        description: 'El cuerpo geológicamente más activo del Sistema Solar, cubierto de volcanes activos.',
+        description: 'El cuerpo geológicamente más activo del Sistema Solar, cubierto de volcanes activos que eyectan azufre a cientos de kilómetros de altura.',
       },
       {
         id: 'europa',
@@ -197,7 +259,7 @@ export const PLANETS: PlanetData[] = [
         orbitRadius: 3.5,
         orbitSpeed: 1.4,
         color: '#d4c9a8',
-        description: 'Luna de Júpiter con un océano de agua líquida bajo su superficie helada. Candidato a albergar vida.',
+        description: 'Bajo su superficie de hielo hay un océano de agua líquida más grande que todos los océanos de la Tierra. Es uno de los mejores candidatos para buscar vida extraterrestre.',
       },
       {
         id: 'ganymede',
@@ -206,7 +268,7 @@ export const PLANETS: PlanetData[] = [
         orbitRadius: 4.5,
         orbitSpeed: 0.9,
         color: '#a0987a',
-        description: 'El satélite natural más grande del Sistema Solar, más grande que el planeta Mercurio.',
+        description: 'El satélite natural más grande del Sistema Solar, más grande que Mercurio. Es el único satélite conocido con campo magnético propio.',
       },
       {
         id: 'callisto',
@@ -215,10 +277,10 @@ export const PLANETS: PlanetData[] = [
         orbitRadius: 5.5,
         orbitSpeed: 0.5,
         color: '#7a7060',
-        description: 'La luna más craterizada del Sistema Solar. Orbita fuera del cinturón de radiación de Júpiter.',
+        description: 'La superficie más craterizada del Sistema Solar. Orbita fuera del cinturón de radiación de Júpiter, lo que la hace candidata para futuras bases humanas.',
       },
     ],
-    textureType: 'stripes',
+    textureType: 'jupiter',
     stripeColors: ['#c88b3a', '#e8a84a', '#a87030', '#d4a060', '#b87828', '#e8b84a', '#9a6020'],
   },
   {
@@ -230,11 +292,22 @@ export const PLANETS: PlanetData[] = [
     rotationSpeed: 1.65,
     color: '#e8d5a3',
     emissive: '#2a2010',
-    description: 'Famoso por sus espectaculares anillos de hielo y roca. Es el único planeta del Sistema Solar menos denso que el agua.',
+    description: 'Famoso por sus espectaculares anillos de hielo y roca. Es el único planeta del Sistema Solar menos denso que el agua: ¡flotaría!',
     realDistance: '1,432 millones de km',
     realDiameter: '116,460 km',
     moonsCount: 146,
-    fact: 'Los anillos de Saturno tienen 270,000 km de diámetro pero solo 100 m de grosor.',
+    fact: 'Saturno es el único planeta que flotaría en el agua. Sus anillos se extienden 270,000 km pero tienen solo 100 m de grosor.',
+    curiosities: [
+      'Sus anillos tienen apenas 100 metros de grosor pero 270,000 km de diámetro.',
+      'Es el planeta con mayor número de lunas conocidas: 146.',
+      'Tiene vientos de hasta 1,800 km/h en su ecuador.',
+      'Sus anillos están compuestos principalmente de partículas de hielo de agua.',
+    ],
+    rotationPeriod: '10 horas 33 minutos',
+    orbitalPeriod: '29.5 años terrestres',
+    avgTemperature: '-140°C (nubes superiores)',
+    comparison: '9 veces el diámetro de la Tierra',
+    narration: 'Alcanzamos Saturno, la joya del Sistema Solar. Sus majestuosos anillos se extienden a lo largo de 270,000 kilómetros pero tienen apenas 100 metros de grosor. El planeta es tan poco denso que, si existiera un océano lo suficientemente grande, Saturno flotaría en él. Tiene 146 lunas conocidas, más que cualquier otro planeta.',
     satellites: [
       {
         id: 'titan',
@@ -243,7 +316,7 @@ export const PLANETS: PlanetData[] = [
         orbitRadius: 3.5,
         orbitSpeed: 0.9,
         color: '#d4a030',
-        description: 'La luna más grande de Saturno. Posee una densa atmósfera de nitrógeno y lagos de metano líquido.',
+        description: 'La luna más grande de Saturno y la segunda del Sistema Solar. Posee una densa atmósfera de nitrógeno con ríos, lagos y lluvia de metano líquido. Es el único cuerpo además de la Tierra con líquido en su superficie.',
       },
       {
         id: 'enceladus',
@@ -252,7 +325,7 @@ export const PLANETS: PlanetData[] = [
         orbitRadius: 2.5,
         orbitSpeed: 2.5,
         color: '#e8e8ff',
-        description: 'Luna de Saturno que expulsa géiseres de vapor de agua al espacio. Tiene un océano subsuperficial.',
+        description: 'Una de las lunas más intrigantes del Sistema Solar. Expulsa géiseres de vapor de agua y material orgánico al espacio, alimentando el anillo E de Saturno. Tiene un océano subsuperficial con condiciones potencialmente habitables.',
       },
       {
         id: 'rhea',
@@ -261,16 +334,16 @@ export const PLANETS: PlanetData[] = [
         orbitRadius: 4.5,
         orbitSpeed: 0.55,
         color: '#cccccc',
-        description: 'La segunda luna más grande de Saturno, cubierta de hielo y cráteres.',
+        description: 'La segunda luna más grande de Saturno. Su superficie está cubierta de hielo y cráteres de impacto. Podría tener un débil sistema de anillos propio.',
       },
     ],
     hasRings: true,
     ringInner: 2.0,
-    ringOuter: 3.5,
+    ringOuter: 3.6,
     ringColor: '#c8b887',
-    ringOpacity: 0.7,
+    ringOpacity: 0.75,
     tilt: 0.47,
-    textureType: 'stripes',
+    textureType: 'saturn',
     stripeColors: ['#e8d5a3', '#d4bf88', '#f0e0b8', '#c8b073', '#e0cc98'],
   },
   {
@@ -282,12 +355,23 @@ export const PLANETS: PlanetData[] = [
     rotationSpeed: -1.04,
     color: '#7de8e8',
     emissive: '#002a2a',
-    atmosphereColor: '#a0f0f0',
-    description: 'El planeta de hielo más frío del Sistema Solar (-224°C). Rota de lado con una inclinación axial de 98°, probablemente por un impacto antiguo.',
+    atmosphereColor: '#a0f5f5',
+    description: 'El planeta de hielo más frío (-224°C). Rota de lado con una inclinación de 98°, probablemente por un impacto antiguo. Tiene anillos delgados y oscuros.',
     realDistance: '2,867 millones de km',
     realDiameter: '50,724 km',
     moonsCount: 28,
-    fact: 'Urano tarda 84 años terrestres en dar una vuelta completa al Sol.',
+    fact: 'Urano gira de "lado" con un eje inclinado 98°. En su polo, el Sol brilla durante 42 años seguidos y luego es oscuridad total por otros 42 años.',
+    curiosities: [
+      'Es el planeta más frío del Sistema Solar con -224°C, más frío que Neptuno.',
+      'Sus lunas llevan nombres de personajes de Shakespeare y Alexander Pope.',
+      'Tiene 13 anillos conocidos, descubiertos en 1977.',
+      'Emite muy poca energía interna, a diferencia de Júpiter y Saturno.',
+    ],
+    rotationPeriod: '17 horas 14 minutos (retrógrado)',
+    orbitalPeriod: '84 años terrestres',
+    avgTemperature: '-195°C',
+    comparison: '4 veces el diámetro de la Tierra',
+    narration: 'Llegamos a Urano, el planeta de hielo que gira de lado. Su eje de rotación está inclinado casi 98 grados, por lo que orbita el Sol rodando como una canica. Es el planeta más frío del Sistema Solar con temperaturas de 224 grados bajo cero, más frío incluso que Neptuno, que está mucho más lejos.',
     satellites: [
       {
         id: 'miranda',
@@ -296,7 +380,7 @@ export const PLANETS: PlanetData[] = [
         orbitRadius: 2.0,
         orbitSpeed: 2.8,
         color: '#b0c0d0',
-        description: 'La luna más pequeña de las principales de Urano. Tiene un terreno caótico y acantilados de 20 km.',
+        description: 'La luna más pequeña de las principales de Urano. Tiene un terreno extremadamente caótico con acantilados de hasta 20 km de altura, los más grandes del Sistema Solar.',
       },
       {
         id: 'ariel',
@@ -305,10 +389,10 @@ export const PLANETS: PlanetData[] = [
         orbitRadius: 2.8,
         orbitSpeed: 1.8,
         color: '#c8d0d8',
-        description: 'Una de las lunas más brillantes de Urano, con extensos valles y cañones.',
+        description: 'Una de las lunas más brillantes de Urano, con extensos valles y cañones que sugieren actividad geológica pasada.',
       },
     ],
-    textureType: 'ice',
+    textureType: 'uranus',
     tilt: 1.71,
   },
   {
@@ -325,7 +409,18 @@ export const PLANETS: PlanetData[] = [
     realDistance: '4,515 millones de km',
     realDiameter: '49,244 km',
     moonsCount: 16,
-    fact: 'Neptuno tarda 165 años terrestres en completar una órbita alrededor del Sol.',
+    fact: 'Los vientos en Neptuno alcanzan 2,100 km/h, los más veloces del Sistema Solar. Un año neptuniano dura 165 años terrestres.',
+    curiosities: [
+      'Neptuno fue el primer planeta predicho matemáticamente antes de ser observado.',
+      'Genera más calor del que recibe del Sol, tiene una fuente de calor interna.',
+      'Su luna Tritón tiene la temperatura más fría medida en el Sistema Solar: -235°C.',
+      'En su interior podría haber un océano de agua supercomprimida a alta temperatura.',
+    ],
+    rotationPeriod: '16 horas 6 minutos',
+    orbitalPeriod: '165 años terrestres',
+    avgTemperature: '-200°C',
+    comparison: '4 veces el diámetro de la Tierra',
+    narration: 'Terminamos nuestro viaje en Neptuno, el planeta más alejado del Sol. Este mundo azul y ventoso es invisible a simple vista desde la Tierra. Sus vientos alcanzan los 2,100 kilómetros por hora, los más rápidos del Sistema Solar. Aquí, el Sol parece apenas una estrella brillante en el cielo. Un año neptuniano dura 165 años terrestres.',
     satellites: [
       {
         id: 'triton',
@@ -334,7 +429,7 @@ export const PLANETS: PlanetData[] = [
         orbitRadius: 2.5,
         orbitSpeed: -1.4,
         color: '#d0c8c0',
-        description: 'La única luna grande con órbita retrógrada. Se mueve en sentido contrario a la rotación de Neptuno.',
+        description: 'La única luna grande del Sistema Solar con órbita retrógrada. Se mueve en sentido contrario a la rotación de Neptuno, lo que sugiere que fue capturada del cinturón de Kuiper. Está condenada a ser destrozada en unos 3,600 millones de años.',
       },
       {
         id: 'nereid',
@@ -343,10 +438,10 @@ export const PLANETS: PlanetData[] = [
         orbitRadius: 4.0,
         orbitSpeed: 0.6,
         color: '#b0b0b0',
-        description: 'La tercera luna más grande de Neptuno, con una de las órbitas más excéntricas del Sistema Solar.',
+        description: 'La tercera luna más grande de Neptuno, con una de las órbitas más excéntricas del Sistema Solar. Su período orbital varía enormemente.',
       },
     ],
-    textureType: 'gas',
+    textureType: 'neptune',
   },
 ];
 
@@ -354,9 +449,15 @@ export const SUN_DATA = {
   radius: 3.0,
   color: '#FDB813',
   emissive: '#FF8C00',
-  description: 'La estrella central de nuestro Sistema Solar. Una esfera de plasma ardiente compuesta principalmente de hidrógeno (73%) y helio (25%).',
+  description: 'La estrella central de nuestro Sistema Solar. Una esfera de plasma ardiente compuesta principalmente de hidrógeno (73%) y helio (25%). En su núcleo, la temperatura alcanza 15 millones de grados.',
   realDiameter: '1,392,700 km',
-  temperature: '5,500°C (superficie) / 15,000,000°C (núcleo)',
+  temperature: '5,500°C (superficie) · 15,000,000°C (núcleo)',
   age: '4,600 millones de años',
-  fact: 'El Sol contiene el 99.86% de toda la masa del Sistema Solar.',
+  fact: 'El Sol contiene el 99.86% de toda la masa del Sistema Solar. Cada segundo convierte 600 millones de toneladas de hidrógeno en helio.',
+  curiosities: [
+    'La luz del Sol tarda 8 minutos y 20 segundos en llegar a la Tierra.',
+    'El Sol ha consumido aproximadamente la mitad de su hidrógeno. Tiene unos 5,000 millones de años más de vida.',
+    'Las manchas solares son regiones más frías que aparecen oscuras, a 4,000°C vs 5,500°C.',
+    'El viento solar viaja a 400 km/s y crea las auroras en los polos terrestres.',
+  ],
 };

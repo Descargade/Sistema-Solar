@@ -1,0 +1,200 @@
+Actúa como un desarrollador senior especializado en visualización 3D, experiencia de usuario e interfaces educativas interactivas.
+
+Quiero que mejores y eleves significativamente la calidad de una aplicación web del Sistema Solar ya existente.
+
+El objetivo es que el resultado final sea visualmente impactante, realista y digno de un portafolio profesional de alto nivel, comparable en experiencia a Solar System Scope.
+
+---
+
+## 🎯 OBJETIVO PRINCIPAL
+Transformar la aplicación actual en una experiencia inmersiva, fluida y visualmente atractiva, con alto nivel de realismo, mejor UX/UI y mayor profundidad educativa.
+
+---
+
+## 🌌 MEJORAS DE REALISMO (CRÍTICO)
+
+### PLANETAS
+- Usar texturas de alta calidad pero optimizadas (2K máx)
+- Agregar:
+  - Normal maps (relieve)
+  - Specular maps (reflejos, especialmente en la Tierra)
+  - Emissive maps (luces nocturnas en la Tierra)
+- Aplicar iluminación realista:
+  - Luz principal desde el Sol (PointLight)
+  - Sombras suaves (castShadow / receiveShadow)
+- Ajustar materiales (MeshStandardMaterial o superior)
+
+### ATMÓSFERAS
+- Agregar glow atmosférico en planetas como:
+  - Tierra
+  - Venus
+  - Marte
+- Usar shaders simples o capas transparentes
+
+### ESCALA Y CÁMARA
+- Mejorar escalas para permitir acercamientos sin romper la escena
+- Configurar cámara con:
+  - Zoom más cercano (muy importante)
+  - Límites suaves
+  - Transiciones suaves (lerp)
+
+---
+
+## 🎥 EXPERIENCIA DE NAVE ESPACIAL (FEATURE WOW)
+
+Implementar un “modo viaje” donde:
+
+- Una nave espacial recorre automáticamente los planetas
+- La cámara sigue a la nave (modo cinematic)
+- Se detiene en cada planeta
+- Muestra información + narración
+
+### NAVE:
+- Modelo simple pero estilizado (no pesado)
+- Movimiento suave entre planetas (interpolación)
+
+### NARRACIÓN:
+- Usar Web Speech API (speechSynthesis)
+- Narración en español
+- Texto sincronizado con voz
+
+Ejemplo:
+"Marte es conocido como el planeta rojo debido a..."
+
+Agregar botón:
+- "Iniciar viaje"
+- "Pausar"
+- "Saltar planeta"
+
+---
+
+## 🌙 SATÉLITES (MEJORADOS)
+
+### NATURALES:
+- Mejorar órbitas (más visibles y suaves)
+- Permitir zoom hasta verlos claramente
+- Ejemplo:
+  - Luna (detallada)
+  - Europa, Titán, etc.
+
+### ARTIFICIALES (TIERRA):
+- ARSAT-1
+- Hubble
+- ISS
+
+Requisitos:
+- Órbitas diferenciadas
+- Tamaño visible al hacer zoom
+- Tooltips o mini info al hacer hover/click
+
+---
+
+## 🧠 INFORMACIÓN (MEJORADA)
+
+Expandir el panel con:
+
+- Datos básicos
+- Curiosidades
+- Comparaciones (ej: "3 veces el tamaño de la Tierra")
+- Tiempo de rotación y traslación
+- Temperatura promedio
+
+Agregar:
+- Secciones con tabs (Información | Satélites | Curiosidades)
+
+---
+
+## 🎨 UI / UX (CRÍTICO - ACTUALMENTE FALLA)
+
+Rediseñar completamente la interfaz:
+
+### ESTILO:
+- Glassmorphism + estética espacial
+- Gradientes oscuros + acentos luminosos
+- Tipografía moderna (ej: Orbitron, Inter)
+
+### ELEMENTOS:
+- Panel flotante animado
+- Transiciones suaves
+- Loader elegante (tipo “cargando universo…”)
+- HUD minimalista
+
+### MICROINTERACCIONES:
+- Hover en planetas
+- Animaciones al seleccionar
+- Feedback visual en botones
+
+---
+
+## 🌠 DETALLES QUE SUMAN MUCHO (IMPORTANTE)
+
+Agregar:
+
+- Cinturón de asteroides (simplificado pero visual)
+- Anillos de Saturno con transparencia realista
+- Fondo espacial dinámico (no imagen estática simple)
+- Efecto de bloom (ligero)
+- Estrellas en parallax
+
+---
+
+## ⚡ RENDIMIENTO (OBLIGATORIO)
+
+- Mantener FPS estables
+- Optimizar geometrías
+- Lazy load de texturas si es posible
+- No romper compatibilidad con Replit
+
+---
+
+## 📱 RESPONSIVE
+
+- Prioridad desktop
+- Mobile básico funcional (no perfecto pero usable)
+
+---
+
+## 📦 ESTRUCTURA
+
+- Código modular
+- Separar lógica 3D, UI y datos
+- Comentarios claros
+
+---
+
+## 🌍 IDIOMA
+
+Todo en español (UI, narración, textos)
+
+---
+
+## 🚀 DESPLIEGUE
+
+Asegurar que:
+- Funcione correctamente en entorno estático
+- Compatible con Vercel / GitHub Pages
+- Sin rutas rotas
+
+---
+
+## 🧪 EXTRA (SI ES POSIBLE SIN ROMPER)
+
+- Modo “exploración libre” vs “modo viaje”
+- Control de velocidad del tiempo
+- Botón “centrar en el Sol”
+
+---
+
+## ❗ PRIORIDAD
+
+1. Realismo visual
+2. Experiencia de usuario
+3. Fluidez
+4. Información útil
+5. Features avanzadas
+
+No sacrificar rendimiento por exceso de features.
+
+---
+
+Entrega el código completo, funcional y optimizado.
