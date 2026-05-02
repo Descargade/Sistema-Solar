@@ -365,30 +365,52 @@ export function createMarsTextures(): PlanetTextures {
   const heights = new Float32Array(NW * NH);
   for (let y = 0; y < NH; y++) {
     for (let x = 0; x < NW; x++) {
-      heights[y * NW + x] = fbm(x / NW * 2, y / NH * 2, 5) * 0.7 + 0.15;
+      heights[y * NW + x] = fbm(x / NW * 2.8, y / NH * 2.8, 7) * 0.72 + 0.14;
     }
   }
-  // Valles Marineris canyon
-  for (let x = 160; x < 380; x++) {
-    const cx = x / NW * NW;
-    const cy = 120 + Math.sin(x * 0.04) * 6;
-    for (let dy = -8; dy <= 8; dy++) {
+
+  // Valles Marineris canyon system
+  for (let x = 155; x < 390; x++) {
+    const cy = 120 + Math.sin(x * 0.04) * 8 + Math.cos(x * 0.015) * 5;
+    for (let dy = -10; dy <= 10; dy++) {
       const iy = Math.round(cy + dy);
       if (iy >= 0 && iy < NH) {
-        heights[iy * NW + cx] -= (1 - Math.abs(dy) / 8) * 0.5;
+        heights[iy * NW + x] -= (1 - Math.abs(dy) / 10) * 0.62;
       }
     }
   }
-  // Olympus Mons volcano
-  const omX = 90, omY = 100, omR = 28;
+
+  // Olympus Mons
+  const omX = 90, omY = 100, omR = 32;
   for (let y2 = Math.max(0, omY - omR * 2); y2 < Math.min(NH, omY + omR * 2); y2++) {
     for (let x2 = Math.max(0, omX - omR * 2); x2 < Math.min(NW, omX + omR * 2); x2++) {
       const d = Math.sqrt((x2 - omX) ** 2 + (y2 - omY) ** 2);
       if (d < omR * 2) {
-        heights[Math.floor(y2) * NW + Math.floor(x2)] += Math.exp(-d * d / (omR * omR * 0.8)) * 0.6;
+        heights[Math.floor(y2) * NW + Math.floor(x2)] += Math.exp(-d * d / (omR * omR * 0.85)) * 0.72;
       }
     }
   }
+
+  // Impact craters of various sizes
+  const craters: Array<[number, number, number]> = [
+    [320, 160, 22], [480, 80, 14], [180, 200, 18],
+    [400, 180, 10], [260, 60, 9],  [440, 220, 8],
+    [140, 130, 12], [370, 50, 7],
+  ];
+  craters.forEach(([cx, cy, cr]) => {
+    for (let y2 = Math.max(0, cy - cr * 2); y2 < Math.min(NH, cy + cr * 2); y2++) {
+      for (let x2 = Math.max(0, cx - cr * 2); x2 < Math.min(NW, cx + cr * 2); x2++) {
+        const d = Math.sqrt((x2 - cx) ** 2 + (y2 - cy) ** 2);
+        if (d < cr) {
+          const bowl = Math.cos((d / cr) * Math.PI * 0.5);
+          heights[y2 * NW + x2] -= bowl * 0.45;
+        } else if (d < cr * 1.4) {
+          const rim = Math.exp(-(((d - cr) / (cr * 0.3)) ** 2));
+          heights[y2 * NW + x2] += rim * 0.22;
+        }
+      }
+    }
+  });
 
   const canvas = document.createElement('canvas');
   canvas.width = W; canvas.height = H;
@@ -401,29 +423,43 @@ export function createMarsTextures(): PlanetTextures {
       const h = Math.max(0, Math.min(1, heights[Math.floor(y / H * NH) * NW + Math.floor(x / W * NW)]));
       const polar = Math.abs(y / H - 0.5) * 2;
       const p = (y * W + x) * 4;
-      if (polar > 0.9) {
-        const s = (polar - 0.9) / 0.1;
-        data[p]     = Math.round(210 + s * 35);
-        data[p + 1] = Math.round(210 + s * 35);
-        data[p + 2] = Math.round(225 + s * 25);
+      // Regional color variation: lowlands darker/bluer, highlands brighter/more orange
+      const regionN = snoise(x / W * 3, y / H * 3, 4) * 0.5 + 0.5;
+      if (polar > 0.86) {
+        const s = Math.min(1, (polar - 0.86) / 0.14);
+        data[p]     = Math.round(215 + s * 30);
+        data[p + 1] = Math.round(215 + s * 28);
+        data[p + 2] = Math.round(228 + s * 22);
       } else {
-        data[p]     = Math.round(165 + h * 82);
-        data[p + 1] = Math.round(68  + h * 42);
-        data[p + 2] = Math.round(22  + h * 18);
+        // Base rust/ochre + height-based variation + regional noise
+        data[p]     = Math.round(148 + h * 88 + regionN * 18);
+        data[p + 1] = Math.round(52  + h * 48 + regionN * 12);
+        data[p + 2] = Math.round(14  + h * 22 + regionN * 6);
       }
       data[p + 3] = 255;
     }
   }
   ctx.putImageData(img, 0, 0);
 
-  // Valley shadow
-  ctx.strokeStyle = 'rgba(60,15,5,0.5)';
-  ctx.lineWidth = 7;
-  ctx.beginPath(); ctx.moveTo(160, 120 * H / NH); ctx.lineTo(380, (120 + 6) * H / NH); ctx.stroke();
-  addNoiseOverlay(ctx, W, H, 0.07, 4);
+  // Valley shadow stroke
+  ctx.strokeStyle = 'rgba(50,10,2,0.55)';
+  ctx.lineWidth = 8;
+  ctx.beginPath(); ctx.moveTo(155, 120 * H / NH); ctx.lineTo(390, (128) * H / NH); ctx.stroke();
 
+  // Draw crater floors darker
+  craters.forEach(([cx, cy, cr]) => {
+    const gx = cx / NW * W, gy = cy / NH * H, gr = cr / NW * W;
+    const cg = ctx.createRadialGradient(gx, gy, 0, gx, gy, gr * 2);
+    cg.addColorStop(0, 'rgba(80,25,5,0.5)');
+    cg.addColorStop(0.55, 'rgba(60,18,4,0.3)');
+    cg.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = cg;
+    ctx.beginPath(); ctx.arc(gx, gy, gr * 2, 0, Math.PI * 2); ctx.fill();
+  });
+
+  addNoiseOverlay(ctx, W, H, 0.07, 5);
   const map = new THREE.CanvasTexture(canvas);
-  const normalMap = heightsToNormalMap(heights, NW, NH, 4.5);
+  const normalMap = heightsToNormalMap(heights, NW, NH, 5.5);
   return { map, normalMap };
 }
 
@@ -434,11 +470,13 @@ export function createJupiterTextures(): PlanetTextures {
   const NW = 512, NH = 256;
 
   const heights = new Float32Array(NW * NH);
+  // 18 alternating light/dark bands for higher realism
   const bands = [
-    '#d4963e','#f0b860','#b87838','#e4ae6c',
-    '#c88830','#f8cc56','#aa7028','#dca840',
-    '#c07838','#f0c068','#b07030','#e0a048',
-    '#d09038','#f0bc58',
+    '#c0803a','#f2ba62','#a86c2e','#eeaa58',
+    '#b87838','#f8cc56','#9a6222','#e0a840',
+    '#c07030','#f5c060','#a86828','#e0b048',
+    '#ba7a34','#f0be5a','#9e6420','#daa03c',
+    '#c07838','#eebc56',
   ];
 
   const canvas = document.createElement('canvas');
@@ -449,43 +487,70 @@ export function createJupiterTextures(): PlanetTextures {
   bands.forEach((color, i) => {
     const g = ctx.createLinearGradient(0, i * bH, 0, (i + 1) * bH);
     g.addColorStop(0, color);
-    g.addColorStop(1, bands[(i + 1) % bands.length]);
+    g.addColorStop(0.5, bands[(i + 1) % bands.length]);
+    g.addColorStop(1, bands[(i + 2) % bands.length]);
     ctx.fillStyle = g;
     ctx.fillRect(0, i * bH, W, bH + 1);
   });
 
+  // Turbulent band edges — high-frequency wave distortion
   for (let y = 0; y < H; y++) {
-    const wave = Math.sin(y * 0.22) * 14 + Math.cos(y * 0.07) * 28 + Math.sin(y * 0.55) * 6;
-    for (let x = 0; x < W; x += 5) {
-      const n = snoise((x + wave) / W, y / H, 6);
+    const wave = Math.sin(y * 0.28) * 18 + Math.cos(y * 0.09) * 32 + Math.sin(y * 0.62) * 9 + Math.cos(y * 0.18) * 14;
+    for (let x = 0; x < W; x += 4) {
+      const n = snoise((x + wave) / W, y / H, 7);
       heights[Math.floor(y / H * NH) * NW + Math.floor(x / W * NW)] = n;
-      ctx.fillStyle = `rgba(${190 + Math.round(n * 42)},${108 + Math.round(n * 28)},38,${n * 0.20})`;
-      ctx.fillRect(x, y, 5, 1);
+      const r = 185 + Math.round(n * 52), g = 100 + Math.round(n * 34), b = 32;
+      ctx.fillStyle = `rgba(${r},${g},${b},${Math.abs(n) * 0.26})`;
+      ctx.fillRect(x, y, 4, 1);
     }
   }
 
-  // Great Red Spot
+  // Great Red Spot — vivid, larger, multi-layer
   const grsX = W * 0.65, grsY = H * 0.58;
-  const grs = ctx.createRadialGradient(grsX, grsY, 0, grsX, grsY, 34);
-  grs.addColorStop(0, 'rgba(170,50,22,0.9)');
-  grs.addColorStop(0.35, 'rgba(195,75,35,0.75)');
-  grs.addColorStop(0.7, 'rgba(150,60,25,0.45)');
-  grs.addColorStop(1, 'rgba(0,0,0,0)');
-  ctx.fillStyle = grs;
-  ctx.beginPath(); ctx.ellipse(grsX, grsY, 40, 26, 0, 0, Math.PI * 2); ctx.fill();
+  const grsOuter = ctx.createRadialGradient(grsX, grsY, 0, grsX, grsY, 58);
+  grsOuter.addColorStop(0, 'rgba(148,34,12,0.95)');
+  grsOuter.addColorStop(0.18, 'rgba(172,48,22,0.92)');
+  grsOuter.addColorStop(0.42, 'rgba(200,78,32,0.82)');
+  grsOuter.addColorStop(0.65, 'rgba(210,110,48,0.60)');
+  grsOuter.addColorStop(0.85, 'rgba(190,95,38,0.28)');
+  grsOuter.addColorStop(1, 'rgba(0,0,0,0)');
+  ctx.fillStyle = grsOuter;
+  ctx.beginPath(); ctx.ellipse(grsX, grsY, 58, 36, 0, 0, Math.PI * 2); ctx.fill();
+  // Inner bright core
+  const grsInner = ctx.createRadialGradient(grsX - 6, grsY - 4, 0, grsX, grsY, 22);
+  grsInner.addColorStop(0, 'rgba(230,130,60,0.88)');
+  grsInner.addColorStop(0.5, 'rgba(190,70,28,0.70)');
+  grsInner.addColorStop(1, 'rgba(0,0,0,0)');
+  ctx.fillStyle = grsInner;
+  ctx.beginPath(); ctx.ellipse(grsX, grsY, 24, 15, 0, 0, Math.PI * 2); ctx.fill();
 
   // GRS height bump
   const grsNX = Math.floor(grsX / W * NW), grsNY = Math.floor(grsY / H * NH);
-  for (let y2 = Math.max(0, grsNY - 20); y2 < Math.min(NH, grsNY + 20); y2++) {
-    for (let x2 = Math.max(0, grsNX - 30); x2 < Math.min(NW, grsNX + 30); x2++) {
-      const d = Math.sqrt(((x2 - grsNX) / 30) ** 2 + ((y2 - grsNY) / 20) ** 2);
-      if (d < 1) heights[y2 * NW + x2] += (1 - d) * 0.5;
+  for (let y2 = Math.max(0, grsNY - 26); y2 < Math.min(NH, grsNY + 26); y2++) {
+    for (let x2 = Math.max(0, grsNX - 38); x2 < Math.min(NW, grsNX + 38); x2++) {
+      const d = Math.sqrt(((x2 - grsNX) / 38) ** 2 + ((y2 - grsNY) / 26) ** 2);
+      if (d < 1) heights[y2 * NW + x2] += (1 - d) * 0.65;
     }
   }
 
-  addNoiseOverlay(ctx, W, H, 0.04, 3);
+  // Oval storms (smaller white/cream swirls)
+  const storms = [
+    { x: W * 0.25, y: H * 0.35, rx: 16, ry: 10 },
+    { x: W * 0.45, y: H * 0.72, rx: 12, ry: 7  },
+    { x: W * 0.82, y: H * 0.45, rx: 10, ry: 6  },
+  ];
+  storms.forEach(({ x, y, rx, ry }) => {
+    const sg = ctx.createRadialGradient(x, y, 0, x, y, rx);
+    sg.addColorStop(0, 'rgba(245,230,190,0.88)');
+    sg.addColorStop(0.5, 'rgba(230,210,160,0.55)');
+    sg.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = sg;
+    ctx.beginPath(); ctx.ellipse(x, y, rx, ry, 0, 0, Math.PI * 2); ctx.fill();
+  });
+
+  addNoiseOverlay(ctx, W, H, 0.035, 3);
   const map = new THREE.CanvasTexture(canvas);
-  const normalMap = heightsToNormalMap(heights, NW, NH, 2.5);
+  const normalMap = heightsToNormalMap(heights, NW, NH, 3.0);
   return { map, normalMap };
 }
 

@@ -1,0 +1,176 @@
+Actúa como un senior technical artist y graphics engineer especializado en simulaciones científicas 3D de alto realismo (tipo NASA / Stellarium / Universe Sandbox).
+
+Tu tarea es ELEVAR EL REALISMO VISUAL del Sistema Solar a un nivel superior. El resultado actual aún no es suficientemente realista.
+
+---
+
+# ❗ PROBLEMA CRÍTICO ACTUAL
+Aunque ya hay mejoras, los planetas todavía:
+- No tienen suficiente detalle superficial realista
+- Se perciben como objetos 3D genéricos
+- No transmiten sensación de “cuerpo planetario real”
+- Carecen de riqueza visual dinámica (atmósferas, variaciones, profundidad real)
+
+Esto debe corregirse.
+
+---
+
+# 🌍 1. REALISMO EXTREMO DE PLANETAS (OBLIGATORIO)
+
+## 🚫 PROHIBIDO:
+- Superficies uniformes o repetitivas
+- Falta de variación visual en textura
+- Materiales planos o poco físicos
+- Iluminación que aplana los detalles
+
+---
+
+## ✅ NUEVO ESTÁNDAR DE REALISMO (OBLIGATORIO)
+
+Cada planeta debe tener:
+
+---
+
+## 🧱 TEXTURAS ULTRA DETALLADAS
+
+Las texturas deben reflejar:
+
+- Variación geológica real
+- Diferencias claras de superficie
+- Imperfecciones visibles
+- Detalles finos perceptibles al zoom medio
+
+---
+
+## 🌊 TIERRA (NIVEL MÁXIMO DE REALISMO)
+
+Debe incluir:
+
+- Continentes con relieve visible
+- Océanos con reflejo especular del Sol
+- Capa de nubes dinámica semitransparente
+- Iluminación nocturna (luces urbanas visibles)
+- Transición día/noche realista (terminador suave)
+
+La Tierra debe verse como un planeta vivo, no como una esfera pintada.
+
+---
+
+## 🪐 OTROS PLANETAS
+
+- Júpiter: bandas atmosféricas con gradientes suaves + tormentas visibles
+- Saturno: atmósfera con profundidad + anillos físicamente coherentes
+- Marte: variación de terreno visible (cráteres + zonas erosionadas)
+- Venus: atmósfera densa con efecto difuso realista
+
+---
+
+## 💡 ILUMINACIÓN FÍSICA AVANZADA
+
+- El Sol es la única fuente principal de luz
+- Sombras suaves realistas
+- Terminador día/noche visible en TODOS los planetas
+- Materiales respondiendo correctamente a la luz (PBR real)
+
+---
+
+## 🌌 CONTRASTE VISUAL OBLIGATORIO
+
+- Los planetas deben destacarse claramente del espacio
+- Nunca deben “perderse” en el fondo negro
+- Deben tener presencia visual fuerte incluso a distancia media
+
+---
+
+# 🛰 2. SATÉLITES (REALISMO MEJORADO)
+
+- Luna debe tener cráteres visibles reales
+- Satélites deben tener forma técnica realista (no esferas genéricas)
+- Deben reflejar luz del Sol correctamente
+- Deben ser distinguibles a simple vista del planeta
+
+---
+
+# 🚀 3. NUEVA FEATURE: TRAIL ORBITAL REAL-TIME (OBLIGATORIO)
+
+Implementar el sistema que se propone:
+
+## 🧭 ORBITAL TRAIL DINÁMICO
+
+Cada planeta seleccionado debe tener:
+
+- Una línea curva luminosa que muestra su órbita
+- El trail debe actualizarse en tiempo real
+- Debe mostrar:
+  - posición pasada
+  - posición actual
+  - dirección futura
+
+---
+
+## 💡 REQUISITOS TÉCNICOS:
+
+- Usar curva suave (CatmullRomCurve3 o similar)
+- Trail persistente visible en el espacio
+- Efecto luminoso sutil (no invasivo)
+- Animación continua actualizándose cada frame
+
+---
+
+## 🎥 OBJETIVO VISUAL:
+
+Debe parecer:
+👉 un sistema de navegación orbital real  
+👉 un mapa dinámico del movimiento planetario  
+👉 una simulación científica avanzada  
+
+---
+
+# 🧭 4. EXPERIENCIA GLOBAL
+
+- Cámara suave y cinematográfica
+- Zoom fluido sin saltos
+- Transiciones progresivas
+- Interacción natural y responsiva
+
+---
+
+# 🌠 5. AMBIENTE ESPACIAL
+
+- Estrellas sutiles, no invasivas
+- Fondo con profundidad visual
+- Sensación de escala real del sistema solar
+
+---
+
+# 🎯 OBJETIVO FINAL
+
+El resultado debe parecer:
+- Un simulador astronómico profesional
+- Software educativo científico avanzado
+- No una demo web de Three.js
+
+Debe transmitir:
+✔ realismo físico  
+✔ profundidad espacial  
+✔ precisión visual  
+✔ dinámica orbital real  
+
+---
+
+# ❗ PRIORIDADES ABSOLUTAS
+
+1. REALISMO EXTREMO DE PLANETAS (TEXTURAS + PBR + VARIACIÓN)
+2. TIERRA COMO PLANETA VIVO (OCÉANOS + NUBES + LUCES)
+3. TRAIL ORBITAL DINÁMICO EN TIEMPO REAL
+4. SATÉLITES REALISTAS Y DISTINGUIBLES
+5. ILUMINACIÓN FÍSICA CORRECTA
+
+---
+
+# 📦 ENTREGA
+
+- Código completo funcional
+- Arquitectura limpia
+- Optimizado para Vercel / GitHub Pages
+- Comentarios claros

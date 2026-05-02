@@ -43,6 +43,16 @@ interface SatelliteObject {
   speed: number;
 }
 
+interface OrbitalTracker {
+  group: THREE.Group;
+  tailGeo: THREE.BufferGeometry;
+  futureGeo: THREE.BufferGeometry;
+  futureLine: THREE.Line;
+  marker: THREE.Mesh;
+  planetId: string;
+  distance: number;
+}
+
 interface Props {
   speedMultiplier: number;
   onPlanetSelect: (planet: PlanetData | null, isSun?: boolean) => void;
@@ -70,6 +80,9 @@ const SolarSystemScene = forwardRef<SceneHandle, Props>(
     const sceneRef = useRef<THREE.Scene | null>(null);
     const trailPointsRef = useRef<THREE.Vector3[]>([]);
     const trailLineRef = useRef<THREE.Line | null>(null);
+    const orbitalTrackerRef = useRef<OrbitalTracker | null>(null);
+    const createOrbitalTrackerRef = useRef<((id: string) => void) | null>(null);
+    const clearOrbitalTrackerRef = useRef<(() => void) | null>(null);
     const clickableRef = useRef<Map<THREE.Mesh, ClickableInfo>>(new Map());
 
     useEffect(() => { speedRef.current = speedMultiplier; }, [speedMultiplier]);
@@ -167,6 +180,7 @@ const SolarSystemScene = forwardRef<SceneHandle, Props>(
       setTravelMode(active) {
         travelModeRef.current = active;
         if (spaceshipRef.current) spaceshipRef.current.visible = active;
+        clearOrbitalTrackerRef.current?.();
         if (!active) {
           trailPointsRef.current = [];
           if (trailLineRef.current && sceneRef.current) {
@@ -200,6 +214,12 @@ const SolarSystemScene = forwardRef<SceneHandle, Props>(
         const startTarget = safeCt.target.clone();
         let t = 0;
         lerpRef.current = true;
+
+        if (planetId !== 'sun') {
+          createOrbitalTrackerRef.current?.(planetId);
+        } else {
+          clearOrbitalTrackerRef.current?.();
+        }
 
         function focusLerp() {
           t += 0.016;
@@ -637,6 +657,114 @@ const SolarSystemScene = forwardRef<SceneHandle, Props>(
 
       planetObjectsRef.current = planetObjects;
 
+      // ── Orbital Trail System ──────────────────────────────────────────────
+      function clearOrbitalTracker() {
+        const tracker = orbitalTrackerRef.current;
+        if (!tracker) return;
+        scene.remove(tracker.group);
+        tracker.group.traverse((child) => {
+          if (child instanceof THREE.Line || child instanceof THREE.Mesh) {
+            child.geometry.dispose();
+            if (Array.isArray(child.material)) {
+              (child.material as THREE.Material[]).forEach(m => m.dispose());
+            } else {
+              (child.material as THREE.Material).dispose();
+            }
+          }
+        });
+        orbitalTrackerRef.current = null;
+      }
+
+      function createOrbitalTracker(planetId: string) {
+        clearOrbitalTracker();
+        const obj = planetObjects.get(planetId);
+        if (!obj) return;
+
+        const dist = obj.data.distance;
+        const group = new THREE.Group();
+
+        // Full orbit glow ring
+        const orbitPts: THREE.Vector3[] = [];
+        for (let i = 0; i <= 128; i++) {
+          const a = (i / 128) * Math.PI * 2;
+          orbitPts.push(new THREE.Vector3(Math.cos(a) * dist, 0, Math.sin(a) * dist));
+        }
+        group.add(new THREE.Line(
+          new THREE.BufferGeometry().setFromPoints(orbitPts),
+          new THREE.LineBasicMaterial({ color: 0x4a9eff, transparent: true, opacity: 0.55, depthWrite: false }),
+        ));
+
+        // Tail arc: 180° behind planet (updated per frame)
+        const tailPts = Array.from({ length: 49 }, () => new THREE.Vector3());
+        const tailGeo = new THREE.BufferGeometry().setFromPoints(tailPts);
+        group.add(new THREE.Line(
+          tailGeo,
+          new THREE.LineBasicMaterial({ color: 0x88ddff, transparent: true, opacity: 0.82, depthWrite: false }),
+        ));
+
+        // Future arc: 90° ahead (dashed, updated per frame)
+        const futurePts = Array.from({ length: 25 }, () => new THREE.Vector3());
+        const futureGeo = new THREE.BufferGeometry().setFromPoints(futurePts);
+        const futureLine = new THREE.Line(
+          futureGeo,
+          new THREE.LineDashedMaterial({
+            color: 0xaaccff, transparent: true, opacity: 0.40,
+            depthWrite: false, dashSize: 1.8, gapSize: 1.0,
+          }),
+        );
+        group.add(futureLine);
+
+        // Glowing position indicator at current planet location
+        const markerRadius = Math.max(0.18, obj.data.radius * 0.25);
+        const marker = new THREE.Mesh(
+          new THREE.SphereGeometry(markerRadius, 12, 12),
+          new THREE.MeshStandardMaterial({
+            color: new THREE.Color(obj.data.color),
+            emissive: new THREE.Color(0x4a9eff),
+            emissiveIntensity: 2.8,
+            roughness: 0.0,
+            metalness: 0.0,
+          }),
+        );
+        group.add(marker);
+
+        scene.add(group);
+        orbitalTrackerRef.current = { group, tailGeo, futureGeo, futureLine, marker, planetId, distance: dist };
+      }
+
+      function updateOrbitalTracker() {
+        const tracker = orbitalTrackerRef.current;
+        if (!tracker) return;
+        const obj = planetObjects.get(tracker.planetId);
+        if (!obj) return;
+
+        const dist = tracker.distance;
+        const angle = obj.angle;
+
+        // Trailing arc: 180° behind current position
+        const tailPts: THREE.Vector3[] = [];
+        for (let i = 0; i <= 48; i++) {
+          const a = (angle - Math.PI) + (i / 48) * Math.PI;
+          tailPts.push(new THREE.Vector3(Math.cos(a) * dist, 0, Math.sin(a) * dist));
+        }
+        tracker.tailGeo.setFromPoints(tailPts);
+
+        // Future arc: 90° ahead
+        const futurePts: THREE.Vector3[] = [];
+        for (let i = 0; i <= 24; i++) {
+          const a = angle + (i / 24) * (Math.PI / 2);
+          futurePts.push(new THREE.Vector3(Math.cos(a) * dist, 0, Math.sin(a) * dist));
+        }
+        tracker.futureGeo.setFromPoints(futurePts);
+        tracker.futureLine.computeLineDistances();
+
+        // Move position marker to current planet location
+        tracker.marker.position.set(Math.cos(angle) * dist, 0, Math.sin(angle) * dist);
+      }
+
+      createOrbitalTrackerRef.current = createOrbitalTracker;
+      clearOrbitalTrackerRef.current = clearOrbitalTracker;
+
       // ── Asteroid Belt ─────────────────────────────────────────────────────
       const beltCount = 3200;
       const beltPos = new Float32Array(beltCount * 3);
@@ -734,7 +862,7 @@ const SolarSystemScene = forwardRef<SceneHandle, Props>(
 
         const allMeshes = Array.from(clickable.keys());
         const hits = raycaster.intersectObjects(allMeshes, false);
-        if (!hits.length) { handlePlanetClick(null, false); return; }
+        if (!hits.length) { handlePlanetClick(null, false); clearOrbitalTracker(); return; }
 
         const hitMesh = hits[0].object as THREE.Mesh;
         const info = clickable.get(hitMesh);
@@ -743,16 +871,19 @@ const SolarSystemScene = forwardRef<SceneHandle, Props>(
         if (info.type === 'sun') {
           handlePlanetClick(null, true);
           animateCameraTo(new THREE.Vector3(0, 0, 0), SUN_DATA.radius);
+          clearOrbitalTracker();
         } else if (info.type === 'planet' && info.planet) {
           handlePlanetClick(info.planet, false);
           const wp = new THREE.Vector3();
           hitMesh.getWorldPosition(wp);
           animateCameraTo(wp, info.planet.radius);
+          createOrbitalTracker(info.planet.id);
         } else if (info.type === 'satellite' && info.sat && info.planet) {
           handleSatelliteClick(info.sat, info.planet);
           const wp = new THREE.Vector3();
           hitMesh.getWorldPosition(wp);
           animateCameraTo(wp, info.sat.radius * 8);
+          clearOrbitalTracker();
         }
       }
 
@@ -816,6 +947,8 @@ const SolarSystemScene = forwardRef<SceneHandle, Props>(
           });
         });
 
+        updateOrbitalTracker();
+
         asteroidBelt.rotation.y += 0.0018 * delta * speed;
         starLayers.forEach(({ pts, speed: s }) => { pts.rotation.y += s * delta * 60; });
 
@@ -846,6 +979,7 @@ const SolarSystemScene = forwardRef<SceneHandle, Props>(
 
       return () => {
         cancelAnimationFrame(frameRef.current);
+        clearOrbitalTracker();
         window.removeEventListener('resize', onResize);
         renderer.domElement.removeEventListener('click', onClick);
         renderer.domElement.removeEventListener('mousemove', onMouseMove);
