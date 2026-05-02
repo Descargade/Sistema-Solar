@@ -201,9 +201,9 @@ export function createMercuryTextures(): PlanetTextures {
     for (let x = 0; x < W; x++) {
       const hn = heights[Math.floor(y / H * NH) * NW + Math.floor(x / W * NW)];
       const h = Math.max(0, Math.min(1, hn));
-      const c = Math.round(80 + h * 120);
+      const c = Math.round(115 + h * 105);
       const p = (y * W + x) * 4;
-      data[p] = c + 12; data[p + 1] = c + 4; data[p + 2] = c - 8; data[p + 3] = 255;
+      data[p] = c + 14; data[p + 1] = c + 6; data[p + 2] = c - 8; data[p + 3] = 255;
     }
   }
   ctx.putImageData(img, 0, 0);
@@ -247,10 +247,10 @@ export function createVenusTextures(): PlanetTextures {
   for (let y = 0; y < H; y++) {
     for (let x = 0; x < W; x++) {
       const h = heights[Math.floor(y / H * NH) * NW + Math.floor(x / W * NW)];
-      const c = 170 + Math.round(h * 55);
+      const c = 188 + Math.round(h * 52);
       const p = (y * W + x) * 4;
-      data[p] = Math.min(255, c + 30); data[p + 1] = Math.max(0, c - 15);
-      data[p + 2] = Math.max(0, c - 90); data[p + 3] = 180;
+      data[p] = Math.min(255, c + 32); data[p + 1] = Math.max(0, c - 8);
+      data[p + 2] = Math.max(0, c - 78); data[p + 3] = 255;
     }
   }
   ctx.putImageData(img, 0, 0);
@@ -302,30 +302,30 @@ export function createEarthTextures(): PlanetTextures {
         data[p + 1] = Math.round(oc[1] + (245 - oc[1]) * blend);
         data[p + 2] = Math.round(oc[2] + (255 - oc[2]) * blend);
       } else if (h < SEA_LEVEL) {
-        // Ocean depth
+        // Ocean — vivid deep blue, clearly visible
         const d = (SEA_LEVEL - h) / SEA_LEVEL;
-        data[p] = Math.round(10 + d * 15);
-        data[p + 1] = Math.round(50 + d * 40);
-        data[p + 2] = Math.round(140 + d * 60);
+        data[p]     = Math.round(22  + d * 28);
+        data[p + 1] = Math.round(88  + d * 52);
+        data[p + 2] = Math.round(195 + d * 48);
       } else {
         // Land
         const ht = (h - SEA_LEVEL) / (1 - SEA_LEVEL);
         if (ht < 0.35) {
-          // Lowland / jungle
-          data[p] = Math.round(35 + ht * 60);
-          data[p + 1] = Math.round(120 - ht * 20);
-          data[p + 2] = Math.round(35);
+          // Lowland / tropical
+          data[p]     = Math.round(48  + ht * 75);
+          data[p + 1] = Math.round(148 - ht * 22);
+          data[p + 2] = Math.round(42);
         } else if (ht < 0.7) {
-          // Highlands
-          data[p] = Math.round(80 + ht * 80);
-          data[p + 1] = Math.round(90 + ht * 50);
-          data[p + 2] = Math.round(40 + ht * 20);
+          // Highlands / savanna
+          data[p]     = Math.round(118 + ht * 88);
+          data[p + 1] = Math.round(118 + ht * 55);
+          data[p + 2] = Math.round(58  + ht * 28);
         } else {
-          // Mountain snow
+          // Mountain snow — bright
           const s = (ht - 0.7) / 0.3;
-          data[p] = Math.round(160 + s * 90);
-          data[p + 1] = Math.round(150 + s * 95);
-          data[p + 2] = Math.round(140 + s * 115);
+          data[p]     = Math.round(195 + s * 55);
+          data[p + 1] = Math.round(190 + s * 60);
+          data[p + 2] = Math.round(182 + s * 70);
         }
       }
       data[p + 3] = 255;
@@ -407,9 +407,9 @@ export function createMarsTextures(): PlanetTextures {
         data[p + 1] = Math.round(210 + s * 35);
         data[p + 2] = Math.round(225 + s * 25);
       } else {
-        data[p]     = Math.round(140 + h * 80);
-        data[p + 1] = Math.round(50 + h * 35);
-        data[p + 2] = Math.round(15 + h * 10);
+        data[p]     = Math.round(165 + h * 82);
+        data[p + 1] = Math.round(68  + h * 42);
+        data[p + 2] = Math.round(22  + h * 18);
       }
       data[p + 3] = 255;
     }
@@ -435,10 +435,10 @@ export function createJupiterTextures(): PlanetTextures {
 
   const heights = new Float32Array(NW * NH);
   const bands = [
-    '#c88b3a','#e0a855','#a87030','#d4a060',
-    '#b87828','#e8b84a','#9a6020','#cc9838',
-    '#b07030','#e0b060','#a06020','#d09040',
-    '#c08030','#dca850',
+    '#d4963e','#f0b860','#b87838','#e4ae6c',
+    '#c88830','#f8cc56','#aa7028','#dca840',
+    '#c07838','#f0c068','#b07030','#e0a048',
+    '#d09038','#f0bc58',
   ];
 
   const canvas = document.createElement('canvas');
@@ -459,7 +459,7 @@ export function createJupiterTextures(): PlanetTextures {
     for (let x = 0; x < W; x += 5) {
       const n = snoise((x + wave) / W, y / H, 6);
       heights[Math.floor(y / H * NH) * NW + Math.floor(x / W * NW)] = n;
-      ctx.fillStyle = `rgba(${180 + Math.round(n * 40)},${100 + Math.round(n * 25)},30,${n * 0.18})`;
+      ctx.fillStyle = `rgba(${190 + Math.round(n * 42)},${108 + Math.round(n * 28)},38,${n * 0.20})`;
       ctx.fillRect(x, y, 5, 1);
     }
   }

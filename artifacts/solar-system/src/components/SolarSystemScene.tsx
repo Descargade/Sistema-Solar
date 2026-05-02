@@ -251,7 +251,7 @@ const SolarSystemScene = forwardRef<SceneHandle, Props>(
       renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
       renderer.setSize(container.clientWidth, container.clientHeight);
       renderer.toneMapping = THREE.ACESFilmicToneMapping;
-      renderer.toneMappingExposure = 1.1;
+      renderer.toneMappingExposure = 1.6;
       renderer.outputColorSpace = THREE.SRGBColorSpace;
       renderer.shadowMap.enabled = true;
       renderer.shadowMap.type = THREE.PCFShadowMap;
@@ -284,25 +284,27 @@ const SolarSystemScene = forwardRef<SceneHandle, Props>(
       composer.addPass(new RenderPass(scene, camera));
       const bloomPass = new UnrealBloomPass(
         new THREE.Vector2(container.clientWidth, container.clientHeight),
-        0.5, 0.52, 0.80
+        0.70, 0.40, 0.52
       );
       composer.addPass(bloomPass);
       composer.addPass(new OutputPass());
 
       // ── Lighting ──────────────────────────────────────────────────────────
-      // Very low ambient so the dark side is truly dark
-      scene.add(new THREE.AmbientLight(0x060814, 0.4));
-      // Hemisphere: subtle deep space tint
-      const hemi = new THREE.HemisphereLight(0x0a0a22, 0x000000, 0.15);
+      // Ambient — strong enough that the dark side is visible, not pitch black
+      scene.add(new THREE.AmbientLight(0x1a2a5e, 2.2));
+      // Hemisphere: space blue above, dark navy below — gives depth
+      const hemi = new THREE.HemisphereLight(0x334488, 0x111133, 0.55);
       scene.add(hemi);
-      // Sun point light — main source, physically stronger
-      const sunLight = new THREE.PointLight(0xfff8e8, 9.0, 1000);
+      // Sun point light — decay=0 so ALL planets (even Neptune) receive light
+      const sunLight = new THREE.PointLight(0xfff8e8, 3.5, 0);
+      sunLight.decay = 0;
       sunLight.castShadow = true;
       sunLight.shadow.mapSize.set(2048, 2048);
       sunLight.shadow.radius = 2;
       scene.add(sunLight);
-      // Warm secondary fill (limb brightening simulation)
-      const sunFill = new THREE.PointLight(0xff9944, 1.8, 180);
+      // Warm secondary fill — also no falloff
+      const sunFill = new THREE.PointLight(0xff9944, 1.6, 0);
+      sunFill.decay = 0;
       scene.add(sunFill);
 
       // ── Stars ─────────────────────────────────────────────────────────────
@@ -396,15 +398,15 @@ const SolarSystemScene = forwardRef<SceneHandle, Props>(
           map: textures.map,
           normalMap: textures.normalMap,
           normalScale: new THREE.Vector2(
-            isRocky ? 2.2 : isGasGiant ? 0.6 : 1.2,
-            isRocky ? 2.2 : isGasGiant ? 0.6 : 1.2
+            isRocky ? 1.5 : isGasGiant ? 0.50 : 0.90,
+            isRocky ? 1.5 : isGasGiant ? 0.50 : 0.90
           ),
           ...(textures.roughnessMap
             ? { roughnessMap: textures.roughnessMap }
-            : { roughness: isGasGiant ? 0.88 : 0.78 }),
+            : { roughness: isGasGiant ? 0.80 : 0.72 }),
           metalness: 0.0,
           emissive: new THREE.Color(planet.emissive ?? '#000000'),
-          emissiveIntensity: 0.06,
+          emissiveIntensity: 0.18,
         });
 
         const mesh = new THREE.Mesh(geo, mat);
@@ -652,17 +654,17 @@ const SolarSystemScene = forwardRef<SceneHandle, Props>(
           if (prev !== hitMesh) {
             if (prev) {
               const prevMat = prev.material as THREE.MeshStandardMaterial;
-              if (prevMat.emissiveIntensity !== undefined) prevMat.emissiveIntensity = 0.06;
+              if (prevMat.emissiveIntensity !== undefined) prevMat.emissiveIntensity = 0.18;
             }
             hoveredRef.current = hitMesh;
             const hitMat = hitMesh.material as THREE.MeshStandardMaterial;
-            if (hitMat.emissiveIntensity !== undefined) hitMat.emissiveIntensity = 0.45;
+            if (hitMat.emissiveIntensity !== undefined) hitMat.emissiveIntensity = 0.52;
           }
           renderer.domElement.style.cursor = 'pointer';
         } else {
           if (prev) {
             const prevMat = prev.material as THREE.MeshStandardMaterial;
-            if (prevMat.emissiveIntensity !== undefined) prevMat.emissiveIntensity = 0.06;
+            if (prevMat.emissiveIntensity !== undefined) prevMat.emissiveIntensity = 0.18;
           }
           hoveredRef.current = null;
           renderer.domElement.style.cursor = 'default';

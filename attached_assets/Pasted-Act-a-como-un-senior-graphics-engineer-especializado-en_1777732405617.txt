@@ -1,0 +1,164 @@
+Actúa como un senior graphics engineer especializado en simulación 3D científica avanzada, render físico (PBR) y visualización espacial realista tipo NASA / planetarios profesionales.
+
+Tu tarea es REHACER completamente el sistema visual de los planetas porque el resultado actual es INACEPTABLE:
+- Los planetas se ven oscuros, planos o sin detalle
+- No se distinguen correctamente del fondo espacial
+- Parecen simples esferas con color o textura mal aplicada
+- No hay sensación de realismo ni escala visual
+
+Esto debe ser CORREGIDO DESDE LA BASE.
+
+---
+
+# ❗ REQUERIMIENTO CRÍTICO: REEMPLAZO COMPLETO DEL MODELO VISUAL
+
+NO se deben “ajustar colores”.
+NO se deben “mejorar ligeramente texturas”.
+
+👉 SE DEBE RECONSTRUIR EL SISTEMA VISUAL DE PLANETAS COMPLETAMENTE.
+
+---
+
+# 🌍 1. PLANETAS (NUEVO SISTEMA VISUAL OBLIGATORIO)
+
+## 🚫 PROHIBIDO ABSOLUTO:
+- MeshBasicMaterial
+- Colores planos sólidos
+- Texturas oscuras sin iluminación
+- Esferas sin detalle visible
+- Materiales genéricos sin PBR
+
+---
+
+## ✅ NUEVO ESTÁNDAR OBLIGATORIO:
+
+### 🧱 MATERIAL FÍSICO REAL (PBR OBLIGATORIO)
+Cada planeta debe usar:
+
+- THREE.MeshStandardMaterial o MeshPhysicalMaterial (preferido)
+- map (textura real de alta calidad)
+- normalMap (relieve visible claro)
+- roughnessMap (variación de superficie)
+- specular highlights coherentes
+- emissiveMap SOLO si aplica (ej: Tierra nocturna)
+
+---
+
+### 🌌 TEXTURAS (CRÍTICO)
+- Deben ser claramente visibles incluso desde distancia media
+- NO deben desaparecer en la oscuridad del espacio
+- Deben tener contraste suficiente contra el fondo
+- Deben representar el planeta claramente identificable
+
+Ejemplo obligatorio:
+- Tierra: continentes + océanos visibles + luces nocturnas
+- Júpiter: bandas atmosféricas claramente diferenciadas
+- Marte: tono rojo con variaciones de superficie visibles
+
+---
+
+### 💡 ILUMINACIÓN REALISTA (OBLIGATORIO)
+- El Sol es la ÚNICA fuente de luz principal (PointLight fuerte)
+- AmbientLight muy baja (solo soporte técnico)
+- Sombras suaves activadas correctamente
+- Cada planeta debe tener terminador luz/sombra visible (efecto esférico real)
+
+---
+
+### 🌍 VISIBILIDAD CONTRA EL ESPACIO (CRÍTICO)
+Los planetas deben:
+- DESTACAR claramente del fondo espacial
+- Tener suficiente brillo y contraste
+- NO perderse en el negro del espacio
+- Tener separación visual clara del fondo
+
+---
+
+# 🪐 2. SATÉLITES (MEJOR VISIBILIDAD OBLIGATORIA)
+
+## NATURALES
+- Luna (Tierra) OBLIGATORIA y claramente visible
+- Io, Europa, Ganímedes
+- Titán, Encélado
+
+## ARTIFICIALES
+- ARSAT-1
+- ISS
+- Hubble
+
+---
+
+## REQUISITOS:
+- Deben ser visibles incluso en zoom medio
+- Deben tener material distinto del planeta (para distinguirlos)
+- Deben tener órbitas suaves y visibles
+- Deben poder seleccionarse individualmente
+
+---
+
+# 🚀 3. REGLA DE ORO: CONTRASTE VISUAL
+
+El sistema debe garantizar:
+- Planetas visibles SIEMPRE
+- Textura clara en cualquier zoom medio
+- Separación clara entre planeta y fondo
+- Nunca “objetos perdidos en negro”
+
+---
+
+# 🌠 4. FONDO ESPACIAL (AJUSTE NECESARIO)
+
+- Fondo NO debe competir con los planetas
+- Estrellas sutiles pero no invasivas
+- Profundidad visual (parallax ligero)
+- Evitar saturación visual
+
+---
+
+# 🚀 5. MODO VIAJE (MANTENER PERO MEJORAR)
+
+## IMPORTANTE:
+- Velocidad LENTA (cinemática real)
+- El usuario debe poder OBSERVAR el recorrido
+
+### 📈 TRAZADO OBLIGATORIO:
+- Dibujar trayectoria visible de la nave
+- Mantener línea del recorrido en el espacio
+- Curva suave tipo ruta orbital
+
+---
+
+# 🎥 6. EXPERIENCIA VISUAL
+
+- Cámara suave y estable
+- Transiciones nunca instantáneas
+- Zoom fluido sin saltos
+- Interacción responsiva
+
+---
+
+# 🧠 7. OBJETIVO FINAL
+
+El resultado debe parecer:
+- Un simulador educativo profesional
+- No un demo básico de Three.js
+- Similar en sensación a software tipo planetario científico
+
+---
+
+# ❗ PRIORIDADES ABSOLUTAS
+
+1. PLANETAS VISIBLES, DETALLADOS Y CON CONTRASTE REAL
+2. TEXTURAS PBR CORRECTAMENTE APLICADAS
+3. ILUMINACIÓN REALISTA (SOL COMO FUENTE PRINCIPAL)
+4. SATÉLITES DISTINGUIBLES Y SELECCIONABLES
+5. CÁMARA Y VIAJE CINEMATOGRÁFICO LENTO
+
+---
+
+# 📦 ENTREGA
+
+- Código completo funcional
+- Estructura limpia
+- Comentarios claros
+- Optimizado para Vercel / GitHub Pages
