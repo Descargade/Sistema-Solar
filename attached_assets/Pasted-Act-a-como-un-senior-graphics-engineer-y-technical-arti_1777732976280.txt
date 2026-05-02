@@ -1,0 +1,203 @@
+Actúa como un senior graphics engineer y technical artist especializado en simulaciones 3D científicas, visualización planetaria y motores tipo NASA / planetarios profesionales.
+
+Tu tarea es RECONSTRUIR Y ELEVAR el nivel visual de una aplicación del Sistema Solar que actualmente es insuficiente en realismo, detalle y calidad percibida.
+
+---
+
+# ❗ PROBLEMA ACTUAL CRÍTICO
+El sistema actual:
+- No representa correctamente la superficie real de los planetas
+- Usa texturas simples o incompletas
+- No diferencia correctamente agua, tierra, atmósfera o nubes
+- Los satélites parecen objetos genéricos sin identidad real
+- Falta jerarquía visual y control de exploración
+
+Esto debe ser corregido con un enfoque de simulación científica realista.
+
+---
+
+# 🌍 1. PLANETAS (REALISMO MULTICAPA OBLIGATORIO)
+
+## 🚫 PROHIBIDO:
+- Texturas únicas planas por planeta
+- Colores genéricos sin detalle
+- Materiales sin variación física
+- Representaciones simplificadas tipo “bola pintada”
+
+---
+
+## ✅ NUEVO MODELO VISUAL (OBLIGATORIO)
+
+Cada planeta debe estar construido como un sistema de capas:
+
+---
+
+## 🌊 TIERRA (CASO CRÍTICO DE REALISMO)
+
+Debe incluir:
+
+### 🧱 CAPAS OBLIGATORIAS:
+- Capa base (continentes + océanos)
+- Capa de nubes dinámica (transparente y en movimiento)
+- Capa de iluminación nocturna (luces de ciudades)
+- Normal map para relieve terrestre
+- Especularidad en océanos (reflejo del Sol)
+
+### 🌐 RESULTADO VISUAL:
+- El agua debe verse como agua (reflejo + brillo)
+- La tierra debe tener variación de color y relieve
+- Las nubes deben moverse lentamente alrededor del planeta
+
+---
+
+## 🪐 OTROS PLANETAS
+
+Cada planeta debe tener:
+
+### 🧱 CAPAS REALISTAS SEGÚN CASO:
+- Júpiter: bandas atmosféricas claramente diferenciadas + tormentas visibles
+- Saturno: atmósfera + anillos con transparencia física real
+- Marte: variación de superficie (cráteres + zonas rojas)
+- Venus: atmósfera densa semi-oculta
+
+---
+
+## 💡 ILUMINACIÓN FÍSICA (CRÍTICA)
+- Sol como única fuente principal de luz
+- Sombras suaves reales
+- Terminador día/noche visible en todos los planetas
+- Reflexión coherente según material del planeta
+
+---
+
+## 🌌 VISIBILIDAD Y CONTRASTE
+- Los planetas deben destacar claramente del espacio
+- Nunca deben perderse en el fondo negro
+- Deben tener identidad visual inmediata incluso a media distancia
+
+---
+
+# 🌙 2. SATÉLITES (REALISMO MEJORADO)
+
+## OBLIGATORIO:
+
+Los satélites deben dejar de verse como “objetos genéricos”.
+
+### 🌙 NATURALES:
+- Luna (altamente detallada con cráteres visibles)
+- Io, Europa, Ganímedes
+- Titán, Encélado
+
+### 🛰 ARTIFICIALES:
+- ARSAT-1
+- ISS
+- Hubble
+
+---
+
+## REQUISITOS DE REALISMO:
+- Deben tener forma y proporción creíble
+- Material metálico o técnico (no esferas genéricas)
+- Deben reflejar luz del Sol
+- Deben ser claramente distinguibles de planetas
+
+---
+
+# 🧭 3. INTERFAZ (NUEVO REQUERIMIENTO CLAVE)
+
+## 📌 AGREGAR MENÚ LATERAL (OBLIGATORIO)
+
+Debe incluir:
+
+### 🪐 LISTA DE PLANETAS:
+- Sol
+- Mercurio
+- Venus
+- Tierra
+- Marte
+- Júpiter
+- Saturno
+- Urano
+- Neptuno
+
+---
+
+## FUNCIONALIDAD:
+- Click en planeta → enfoque automático con zoom suave
+- Mostrar información básica en el mismo panel
+- Indicar satélites asociados
+- Animaciones suaves de transición
+
+---
+
+## ESTILO UI:
+- Panel lateral moderno tipo glassmorphism
+- Fondo oscuro con transparencia
+- Tipografía limpia y profesional
+- Íconos simples y claros
+
+---
+
+# 🚀 4. MODO VIAJE (MEJORADO PERO CONSERVADO)
+
+## IMPORTANTE:
+- Velocidad lenta y cinematográfica
+- La nave debe permitir OBSERVAR el trayecto
+
+---
+
+## 📈 TRAZADO VISUAL OBLIGATORIO:
+- Línea curva visible del recorrido espacial
+- Ruta persistente en el espacio (no desaparece inmediatamente)
+- Estilo “mapa de exploración espacial”
+
+---
+
+# 🎥 5. EXPERIENCIA CINEMATOGRÁFICA
+
+- Cámara suave (lerp continuo)
+- Transiciones nunca bruscas
+- Zoom progresivo
+- Sensación de exploración real
+
+---
+
+# 🌠 6. AMBIENTE ESPACIAL
+
+- Estrellas sutiles pero densas
+- Fondo no invasivo
+- Profundidad espacial (parallax ligero)
+
+---
+
+# 🧠 7. OBJETIVO FINAL
+
+El resultado debe parecer:
+- Un simulador planetario profesional
+- Un software educativo científico real
+- No una demo básica de Three.js
+
+Debe transmitir:
+👉 realismo físico  
+👉 escala espacial  
+👉 profundidad visual  
+👉 exploración científica  
+
+---
+
+# ❗ PRIORIDADES ABSOLUTAS
+
+1. PLANETAS MULTICAPA REALISTAS (AGUA, TIERRA, NUBES, ATMÓSFERA)
+2. ILUMINACIÓN FÍSICA CORRECTA
+3. SATÉLITES CON IDENTIDAD REAL
+4. MENÚ LATERAL DE NAVEGACIÓN PLANETARIA
+5. EXPERIENCIA CINEMATOGRÁFICA SUAVE
+
+---
+
+# 📦 ENTREGA
+
+- Código funcional completo
+- Arquitectura limpia y modular
+- Comentarios claros
+- Listo para Vercel / GitHub Pages

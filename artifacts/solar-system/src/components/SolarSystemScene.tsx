@@ -11,12 +11,14 @@ import { PLANETS, SUN_DATA, type PlanetData, type SatelliteData } from '@/data/p
 import {
   createSunTexture, createPlanetTextureByType, createSatelliteTextures,
   createSaturnRingTexture, createStarTexture,
+  createEarthCloudTexture, createEarthNightTexture,
 } from '@/utils/textures';
 
 export interface SceneHandle {
   travelTo: (planetId: string, onArrived?: () => void) => void;
   resetCamera: () => void;
   setTravelMode: (active: boolean) => void;
+  focusPlanet: (planetId: string) => void;
 }
 
 interface ClickableInfo {
@@ -28,6 +30,7 @@ interface ClickableInfo {
 interface PlanetObject {
   pivot: THREE.Object3D;
   mesh: THREE.Mesh;
+  cloudMesh?: THREE.Mesh;
   angle: number;
   data: PlanetData;
   satellites: SatelliteObject[];
@@ -173,6 +176,47 @@ const SolarSystemScene = forwardRef<SceneHandle, Props>(
             trailLineRef.current = null;
           }
         }
+      },
+
+      focusPlanet(planetId) {
+        const cam = cameraRef.current;
+        const ctrl = controlsRef.current;
+        if (!cam || !ctrl) return;
+        const safeC = cam, safeCt = ctrl;
+
+        let worldPos = new THREE.Vector3(0, 0, 0);
+        let radius = SUN_DATA.radius;
+
+        if (planetId !== 'sun') {
+          const obj = planetObjectsRef.current.get(planetId);
+          if (!obj) return;
+          obj.mesh.getWorldPosition(worldPos);
+          radius = obj.data.radius;
+        }
+
+        const offset = radius * 6 + 5;
+        const targetCamPos = worldPos.clone().add(new THREE.Vector3(0, offset * 0.42, offset));
+        const start = safeC.position.clone();
+        const startTarget = safeCt.target.clone();
+        let t = 0;
+        lerpRef.current = true;
+
+        function focusLerp() {
+          t += 0.016;
+          if (t >= 1) {
+            safeC.position.copy(targetCamPos);
+            safeCt.target.copy(worldPos);
+            safeCt.update();
+            lerpRef.current = false;
+            return;
+          }
+          const e = easeInOut(t);
+          safeC.position.lerpVectors(start, targetCamPos, e);
+          safeCt.target.lerpVectors(startTarget, worldPos, e);
+          safeCt.update();
+          requestAnimationFrame(focusLerp);
+        }
+        focusLerp();
       },
     }));
 
@@ -394,6 +438,9 @@ const SolarSystemScene = forwardRef<SceneHandle, Props>(
         const textures = createPlanetTextureByType(planet.textureType, planet.color);
         const isGasGiant = ['jupiter','saturn','uranus','neptune'].includes(planet.id);
         const isRocky    = ['mercury','venus','earth','mars'].includes(planet.id);
+        let cloudMesh: THREE.Mesh | undefined;
+        const isEarth = planet.id === 'earth';
+        const earthNightTex = isEarth ? createEarthNightTexture() : undefined;
         const mat = new THREE.MeshStandardMaterial({
           map: textures.map,
           normalMap: textures.normalMap,
@@ -404,9 +451,15 @@ const SolarSystemScene = forwardRef<SceneHandle, Props>(
           ...(textures.roughnessMap
             ? { roughnessMap: textures.roughnessMap }
             : { roughness: isGasGiant ? 0.80 : 0.72 }),
-          metalness: 0.0,
-          emissive: new THREE.Color(planet.emissive ?? '#000000'),
-          emissiveIntensity: 0.18,
+          metalness: isEarth ? 0.03 : 0.0,
+          ...(earthNightTex ? {
+            emissiveMap: earthNightTex,
+            emissive: new THREE.Color('#ffffff'),
+            emissiveIntensity: 0.90,
+          } : {
+            emissive: new THREE.Color(planet.emissive ?? '#000000'),
+            emissiveIntensity: 0.18,
+          }),
         });
 
         const mesh = new THREE.Mesh(geo, mat);
@@ -431,6 +484,26 @@ const SolarSystemScene = forwardRef<SceneHandle, Props>(
               new THREE.MeshBasicMaterial({ color: ac, transparent: true, opacity, side: THREE.BackSide, depthWrite: false })
             ));
           });
+        }
+
+        // Earth: dynamic cloud layer
+        if (isEarth) {
+          const cloudTex = createEarthCloudTexture();
+          const cloudMat = new THREE.MeshStandardMaterial({
+            map: cloudTex,
+            transparent: true,
+            opacity: 0.88,
+            depthWrite: false,
+            roughness: 1.0,
+            metalness: 0.0,
+            emissive: new THREE.Color('#ffffff'),
+            emissiveIntensity: 0.03,
+          });
+          cloudMesh = new THREE.Mesh(
+            new THREE.SphereGeometry(planet.radius * 1.028, 48, 48),
+            cloudMat,
+          );
+          mesh.add(cloudMesh);
         }
 
         // Saturn rings
@@ -495,6 +568,50 @@ const SolarSystemScene = forwardRef<SceneHandle, Props>(
           satPivot.add(satMesh);
           clickable.set(satMesh, { type: 'satellite', sat, planet });
 
+          // Artificial satellite visual extensions (solar panels / structure)
+          if (sat.isArtificial) {
+            const panelColor = sat.id === 'arsat1' ? '#ddcc44' : '#1a3a7a';
+            const panelMat = new THREE.MeshStandardMaterial({
+              color: panelColor, roughness: 0.18, metalness: 0.75,
+              emissive: new THREE.Color(panelColor), emissiveIntensity: 0.18,
+            });
+            if (sat.id === 'iss') {
+              const wings = new THREE.Mesh(
+                new THREE.BoxGeometry(sat.radius * 10, sat.radius * 0.25, sat.radius * 2.2),
+                panelMat,
+              );
+              satMesh.add(wings);
+              const truss = new THREE.Mesh(
+                new THREE.BoxGeometry(sat.radius * 0.4, sat.radius * 0.25, sat.radius * 4.5),
+                new THREE.MeshStandardMaterial({ color: '#8899aa', roughness: 0.3, metalness: 0.8 }),
+              );
+              satMesh.add(truss);
+            } else if (sat.id === 'hubble') {
+              const barrel = new THREE.Mesh(
+                new THREE.CylinderGeometry(sat.radius * 0.7, sat.radius * 0.7, sat.radius * 4, 10),
+                new THREE.MeshStandardMaterial({ color: '#c0c8d8', roughness: 0.22, metalness: 0.72 }),
+              );
+              barrel.rotation.z = Math.PI / 2;
+              satMesh.add(barrel);
+              const panels = new THREE.Mesh(
+                new THREE.BoxGeometry(sat.radius * 7, sat.radius * 0.2, sat.radius * 2),
+                panelMat,
+              );
+              satMesh.add(panels);
+            } else if (sat.id === 'arsat1') {
+              const body = new THREE.Mesh(
+                new THREE.BoxGeometry(sat.radius * 2, sat.radius * 2.8, sat.radius * 2),
+                new THREE.MeshStandardMaterial({ color: '#b8a840', roughness: 0.3, metalness: 0.65 }),
+              );
+              satMesh.add(body);
+              const solPanels = new THREE.Mesh(
+                new THREE.BoxGeometry(sat.radius * 7, sat.radius * 0.15, sat.radius * 2.2),
+                panelMat,
+              );
+              satMesh.add(solPanels);
+            }
+          }
+
           // Satellite orbit ring
           const satOrbPts: THREE.Vector3[] = [];
           for (let i = 0; i <= 80; i++) {
@@ -515,7 +632,7 @@ const SolarSystemScene = forwardRef<SceneHandle, Props>(
 
         const startAngle = Math.random() * Math.PI * 2;
         pivot.rotation.y = startAngle;
-        planetObjects.set(planet.id, { pivot, mesh, angle: startAngle, data: planet, satellites: satObjects });
+        planetObjects.set(planet.id, { pivot, mesh, cloudMesh, angle: startAngle, data: planet, satellites: satObjects });
       });
 
       planetObjectsRef.current = planetObjects;
@@ -690,6 +807,9 @@ const SolarSystemScene = forwardRef<SceneHandle, Props>(
           obj.angle += obj.data.orbitSpeed * delta * speed * 0.1;
           obj.pivot.rotation.y = obj.angle;
           obj.mesh.rotation.y += obj.data.rotationSpeed * delta * speed * 0.05;
+          if (obj.cloudMesh) {
+            obj.cloudMesh.rotation.y += obj.data.rotationSpeed * delta * speed * 0.058;
+          }
           obj.satellites.forEach((sat) => {
             sat.angle += sat.speed * delta * speed * 0.15;
             sat.pivot.rotation.y = sat.angle;

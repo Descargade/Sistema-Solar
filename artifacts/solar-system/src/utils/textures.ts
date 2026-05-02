@@ -986,6 +986,85 @@ function createGenericTextures(baseColor: string): PlanetTextures {
   return { map: new THREE.CanvasTexture(canvas), normalMap: heightsToNormalMap(heights, W, H, 2.0) };
 }
 
+// ── Earth Cloud Layer ─────────────────────────────────────────────────────────
+
+export function createEarthCloudTexture(): THREE.CanvasTexture {
+  const W = 1024, H = 512;
+  const canvas = document.createElement('canvas');
+  canvas.width = W; canvas.height = H;
+  const ctx = canvas.getContext('2d')!;
+  const img = ctx.createImageData(W, H);
+  const d = img.data;
+  for (let y = 0; y < H; y++) {
+    for (let x = 0; x < W; x++) {
+      const nx = x / W * 5.5, ny = y / H * 5.5;
+      const n1 = fbm(nx, ny, 6);
+      const n2 = fbm(nx * 0.45 + 2.1, ny * 0.45 + 1.3, 4);
+      const c = n1 * 0.7 + n2 * 0.3;
+      const threshold = 0.50;
+      const p = (y * W + x) * 4;
+      if (c > threshold) {
+        const t = Math.min(1, (c - threshold) / 0.45);
+        const alpha = Math.round(t * 248);
+        const bright = Math.round(228 + t * 22);
+        d[p] = bright; d[p+1] = bright; d[p+2] = Math.min(255, bright + 7); d[p+3] = alpha;
+      }
+    }
+  }
+  ctx.putImageData(img, 0, 0);
+  return new THREE.CanvasTexture(canvas);
+}
+
+// ── Earth Night Lights ────────────────────────────────────────────────────────
+
+export function createEarthNightTexture(): THREE.CanvasTexture {
+  const W = 1024, H = 512;
+  const canvas = document.createElement('canvas');
+  canvas.width = W; canvas.height = H;
+  const ctx = canvas.getContext('2d')!;
+  ctx.fillStyle = '#000000';
+  ctx.fillRect(0, 0, W, H);
+
+  const clusters = [
+    { cx: 0.218, cy: 0.405, sx: 0.065, sy: 0.040, n: 55 },
+    { cx: 0.165, cy: 0.385, sx: 0.055, sy: 0.038, n: 40 },
+    { cx: 0.100, cy: 0.408, sx: 0.025, sy: 0.025, n: 18 },
+    { cx: 0.490, cy: 0.340, sx: 0.095, sy: 0.045, n: 72 },
+    { cx: 0.540, cy: 0.300, sx: 0.070, sy: 0.040, n: 30 },
+    { cx: 0.815, cy: 0.388, sx: 0.028, sy: 0.022, n: 42 },
+    { cx: 0.788, cy: 0.412, sx: 0.040, sy: 0.038, n: 48 },
+    { cx: 0.798, cy: 0.372, sx: 0.018, sy: 0.016, n: 18 },
+    { cx: 0.680, cy: 0.455, sx: 0.048, sy: 0.042, n: 32 },
+    { cx: 0.762, cy: 0.490, sx: 0.042, sy: 0.035, n: 22 },
+    { cx: 0.548, cy: 0.445, sx: 0.038, sy: 0.028, n: 20 },
+    { cx: 0.272, cy: 0.588, sx: 0.038, sy: 0.028, n: 18 },
+    { cx: 0.848, cy: 0.635, sx: 0.035, sy: 0.038, n: 16 },
+    { cx: 0.485, cy: 0.498, sx: 0.028, sy: 0.025, n: 10 },
+  ];
+
+  clusters.forEach(({ cx, cy, sx, sy, n }) => {
+    for (let i = 0; i < n; i++) {
+      const lx = (cx + (Math.random() - 0.5) * sx) * W;
+      const ly = (cy + (Math.random() - 0.5) * sy) * H;
+      const r = 0.8 + Math.random() * 2.5;
+      const a = 0.55 + Math.random() * 0.45;
+      const warm = Math.random() > 0.22;
+      ctx.fillStyle = warm
+        ? `rgba(255,${160 + Math.round(Math.random() * 75)},${20 + Math.round(Math.random() * 50)},${a})`
+        : `rgba(200,215,255,${a * 0.65})`;
+      ctx.beginPath(); ctx.arc(lx, ly, r, 0, Math.PI * 2); ctx.fill();
+    }
+    const gx = cx * W, gy = cy * H;
+    const gr = Math.max(sx, sy) * W * 1.4;
+    const g = ctx.createRadialGradient(gx, gy, 0, gx, gy, gr);
+    g.addColorStop(0, `rgba(255,200,80,${Math.min(0.14, n / 580)})`);
+    g.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = g;
+    ctx.fillRect(Math.max(0, gx - gr), Math.max(0, gy - gr), gr * 2, gr * 2);
+  });
+  return new THREE.CanvasTexture(canvas);
+}
+
 // ── Main dispatcher ───────────────────────────────────────────────────────────
 
 export function createPlanetTextureByType(

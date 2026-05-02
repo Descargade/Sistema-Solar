@@ -4,6 +4,7 @@ import InfoPanel from '@/components/InfoPanel';
 import Controls from '@/components/Controls';
 import Loader from '@/components/Loader';
 import TravelMode from '@/components/TravelMode';
+import PlanetMenu from '@/components/PlanetMenu';
 import type { PlanetData, SatelliteData } from '@/data/planets';
 import { PLANETS } from '@/data/planets';
 import { Rocket } from 'lucide-react';
@@ -47,6 +48,18 @@ export default function App() {
     sceneRef.current?.resetCamera();
     clearSelection();
   }, [clearSelection]);
+
+  const handleMenuSelect = useCallback((planetId: string | null, sunSelected: boolean) => {
+    if (travelMode) return;
+    if (sunSelected) {
+      handlePlanetSelect(null, true);
+      sceneRef.current?.focusPlanet('sun');
+    } else if (planetId) {
+      const planet = PLANETS.find(p => p.id === planetId) ?? null;
+      handlePlanetSelect(planet, false);
+      sceneRef.current?.focusPlanet(planetId);
+    }
+  }, [travelMode, handlePlanetSelect]);
 
   const handleStartTravel = useCallback(() => {
     setTravelMode(true);
@@ -106,6 +119,15 @@ export default function App() {
           onLoad={handleLoad}
         />
       </main>
+
+      {/* Planet navigation menu */}
+      {!travelMode && (
+        <PlanetMenu
+          selectedPlanetId={selectedPlanet?.id ?? null}
+          isSun={isSun}
+          onSelect={handleMenuSelect}
+        />
+      )}
 
       {/* Info panel (normal mode) */}
       {!travelMode && (
