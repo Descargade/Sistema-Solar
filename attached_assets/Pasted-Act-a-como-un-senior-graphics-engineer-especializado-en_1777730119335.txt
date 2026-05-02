@@ -1,0 +1,179 @@
+Actúa como un senior graphics engineer especializado en Three.js, render 3D físico (PBR) y visualización científica.
+
+Tu tarea es corregir y mejorar una aplicación existente del Sistema Solar, porque actualmente presenta un problema grave: los planetas NO tienen realismo visual suficiente (se ven planos, con colores sólidos o mal iluminados).
+
+---
+
+# 🎯 OBJETIVO PRINCIPAL
+Transformar la escena en una representación 3D REALISTA del Sistema Solar, con materiales físicos, texturas detalladas, iluminación correcta y una experiencia de exploración inmersiva.
+
+---
+
+# 🌍 1. REALISMO VISUAL DE PLANETAS (CRÍTICO)
+
+## ❌ PROBLEMA ACTUAL
+- Planetas con colores planos
+- Sin textura real
+- Iluminación incorrecta o inexistente
+- Bordes visibles o efecto “bola de color”
+
+## ✅ CORRECCIÓN OBLIGATORIA
+
+Debes implementar:
+
+### 🧱 MATERIALS PBR (OBLIGATORIO)
+Usar exclusivamente:
+- THREE.MeshStandardMaterial o superior
+- NO usar materiales básicos (MeshBasicMaterial está prohibido para planetas)
+
+### 🪐 TEXTURAS REALES
+Cada planeta debe tener:
+- map (textura color real)
+- normalMap (relieve)
+- roughnessMap (superficie)
+- optional: emissiveMap (Tierra nocturna)
+
+Texturas deben estar bien aplicadas, sin distorsión.
+
+### 💡 ILUMINACIÓN REALISTA
+- Luz principal tipo Sol (PointLight fuerte)
+- Luz ambiental mínima (AmbientLight baja intensidad)
+- Sombras activadas correctamente
+
+### 🌌 EFECTO VISUAL
+- Planetas deben verse 3D reales, con volumen y profundidad
+- No deben verse planos ni “dibujados”
+
+---
+
+# 🔭 2. SATÉLITES NATURALES Y ARTIFICIALES (MEJORADO)
+
+## REQUISITOS:
+
+### 🌙 NATURALES
+- Deben tener órbitas visibles suaves
+- Deben poder acercarse con cámara (zoom real)
+- Deben ser seleccionables (click)
+
+Ejemplo:
+- Tierra → Luna
+- Júpiter → Io, Europa, Ganímedes
+- Saturno → Titán, Encélado
+
+### 🛰 ARTIFICIALES (TIERRA)
+- ARSAT-1
+- Hubble
+- ISS
+
+## MEJORAS OBLIGATORIAS:
+- Cada satélite debe ser clickable
+- Mostrar panel de información propio
+- Diferenciar visualmente (material o brillo distinto)
+- Órbitas visibles y suaves
+
+---
+
+# 🚀 3. MODO VIAJE ESPACIAL (MEJORADO + CRÍTICO)
+
+Actualmente existe una idea de “viaje con nave”. Debe ser REHECHO así:
+
+## ✨ NUEVA FUNCIÓN: “TRAYECTORIA REAL DE VIAJE”
+
+### 🚀 NAVE ESPACIAL:
+- Se mueve de planeta a planeta
+
+### 📈 TRAZADO DEL VIAJE (IMPORTANTE):
+- Debe dibujar una línea visible del recorrido
+- Tipo “trail” o curva suavizada (Bezier curve o CatmullRomCurve3)
+- El recorrido debe quedarse visible en el espacio (como mapa del viaje)
+
+### 🎥 CÁMARA:
+- Sigue la nave en modo cinematográfico suave
+- Transición fluida entre planetas
+
+### 🧠 NARRACIÓN:
+- Usar Web Speech API en español
+- Narración al llegar a cada planeta
+
+Ejemplo:
+“Estamos llegando a Marte, el planeta rojo...”
+
+---
+
+# 🌠 4. EXPERIENCIA VISUAL GENERAL
+
+## MEJORAS OBLIGATORIAS:
+
+- Fondo espacial con estrellas dinámicas (no imagen fija)
+- Anillos de Saturno con transparencia real
+- Efecto de profundidad (parallax leve)
+- Zoom sin límites bruscos
+- Cámara suave (lerp en movimientos)
+
+---
+
+# 🎮 5. INTERACCIÓN MEJORADA
+
+- Click en planeta → zoom + info + satélites visibles
+- Click en satélite → info individual
+- Hover con highlight suave
+- Transiciones animadas (NO instantáneas)
+
+---
+
+# 🧠 6. INFORMACIÓN MEJORADA
+
+Cada planeta debe tener:
+- Descripción
+- Tamaño
+- Distancia
+- Temperatura
+- Satélites
+- Curiosidades
+
+Formato UI:
+- Panel moderno tipo glassmorphism
+- Con tabs o secciones
+
+---
+
+# ⚡ 7. RENDIMIENTO (OBLIGATORIO)
+
+- Mantener FPS estable
+- Optimizar texturas
+- No cargar assets innecesarios
+- Mantener compatibilidad con Replit
+
+---
+
+# 🎨 8. ESTILO VISUAL
+
+- Estética espacial realista (no cartoon)
+- UI moderna y minimalista
+- Tipografía limpia
+- Animaciones suaves
+
+---
+
+# ❗ PRIORIDAD ABSOLUTA
+
+1. REALISMO DE PLANETAS (crítico)
+2. ILUMINACIÓN CORRECTA
+3. SATÉLITES INTERACTIVOS
+4. MODO VIAJE CON TRAZADO
+5. UX/UI
+
+---
+
+# 📦 ENTREGA
+
+- Código funcional completo
+- Estructura limpia y modular
+- Comentarios explicativos
+- Listo para Vercel / GitHub Pages
+
+---
+
+NO uses colores planos como reemplazo de texturas.
+NO uses materiales básicos para planetas.
+Si algo no se ve realista, debe corregirse.

@@ -4,56 +4,70 @@ import InfoPanel from '@/components/InfoPanel';
 import Controls from '@/components/Controls';
 import Loader from '@/components/Loader';
 import TravelMode from '@/components/TravelMode';
-import type { PlanetData } from '@/data/planets';
+import type { PlanetData, SatelliteData } from '@/data/planets';
 import { PLANETS } from '@/data/planets';
 import { Rocket } from 'lucide-react';
 
 export default function App() {
-  const [selectedPlanet, setSelectedPlanet] = useState<PlanetData | null>(null);
-  const [isSun, setIsSun] = useState(false);
+  const [selectedPlanet,    setSelectedPlanet]    = useState<PlanetData | null>(null);
+  const [selectedSatellite, setSelectedSatellite] = useState<SatelliteData | null>(null);
+  const [isSun,   setIsSun]   = useState(false);
   const [loading, setLoading] = useState(true);
-  const [speed, setSpeed] = useState(1.0);
+  const [speed,   setSpeed]   = useState(1.0);
   const [travelMode, setTravelMode] = useState(false);
   const sceneRef = useRef<SceneHandle>(null);
+
+  const clearSelection = useCallback(() => {
+    setSelectedPlanet(null);
+    setSelectedSatellite(null);
+    setIsSun(false);
+  }, []);
 
   const handlePlanetSelect = useCallback((planet: PlanetData | null, sunClicked?: boolean) => {
     if (travelMode) return;
     setSelectedPlanet(planet);
+    setSelectedSatellite(null);
     setIsSun(!!sunClicked);
   }, [travelMode]);
 
-  const handleClose = useCallback(() => {
+  const handleSatelliteSelect = useCallback((sat: SatelliteData, _planet: PlanetData) => {
+    if (travelMode) return;
     setSelectedPlanet(null);
+    setSelectedSatellite(sat);
     setIsSun(false);
-  }, []);
+  }, [travelMode]);
+
+  const handleClose = useCallback(() => clearSelection(), [clearSelection]);
 
   const handleLoad = useCallback(() => {
-    setTimeout(() => setLoading(false), 500);
+    setTimeout(() => setLoading(false), 600);
   }, []);
 
   const handleResetCamera = useCallback(() => {
     sceneRef.current?.resetCamera();
-    handleClose();
-  }, [handleClose]);
+    clearSelection();
+  }, [clearSelection]);
 
   const handleStartTravel = useCallback(() => {
     setTravelMode(true);
-    setSelectedPlanet(null);
-    setIsSun(false);
-  }, []);
+    clearSelection();
+  }, [clearSelection]);
 
   const handleTravelClose = useCallback(() => {
     setTravelMode(false);
     sceneRef.current?.resetCamera();
-  }, []);
+    clearSelection();
+  }, [clearSelection]);
 
   const handleTravelFocus = useCallback((planetId: string | null) => {
     if (!planetId) {
       setIsSun(true);
       setSelectedPlanet(null);
+      setSelectedSatellite(null);
     } else {
       const p = PLANETS.find(pl => pl.id === planetId) ?? null;
       setSelectedPlanet(p);
+      setSelectedSatellite(null);
       setIsSun(false);
     }
   }, []);
@@ -77,7 +91,7 @@ export default function App() {
             </button>
           )}
           <div className="header-hint">
-            <span>Haz clic en un planeta para explorar</span>
+            <span>Haz clic en un planeta o satélite para explorar</span>
           </div>
         </div>
       </header>
@@ -88,15 +102,17 @@ export default function App() {
           ref={sceneRef}
           speedMultiplier={speed}
           onPlanetSelect={handlePlanetSelect}
+          onSatelliteSelect={handleSatelliteSelect}
           onLoad={handleLoad}
         />
       </main>
 
-      {/* Info panel */}
+      {/* Info panel (normal mode) */}
       {!travelMode && (
         <InfoPanel
           planet={selectedPlanet}
           isSun={isSun}
+          satellite={selectedSatellite}
           onClose={handleClose}
         />
       )}
@@ -107,6 +123,7 @@ export default function App() {
           <InfoPanel
             planet={selectedPlanet}
             isSun={isSun}
+            satellite={null}
             onClose={() => {}}
           />
           <TravelMode

@@ -7,9 +7,9 @@ import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
 import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
-import { PLANETS, SUN_DATA, type PlanetData } from '@/data/planets';
+import { PLANETS, SUN_DATA, type PlanetData, type SatelliteData } from '@/data/planets';
 import {
-  createSunTexture, createPlanetTextureByType, createMoonTexture,
+  createSunTexture, createPlanetTextureByType, createMoonTextures,
   createSaturnRingTexture, createStarTexture,
 } from '@/utils/textures';
 
@@ -17,6 +17,12 @@ export interface SceneHandle {
   travelTo: (planetId: string, onArrived?: () => void) => void;
   resetCamera: () => void;
   setTravelMode: (active: boolean) => void;
+}
+
+interface ClickableInfo {
+  type: 'sun' | 'planet' | 'satellite';
+  planet?: PlanetData;
+  sat?: SatelliteData;
 }
 
 interface PlanetObject {
@@ -37,6 +43,7 @@ interface SatelliteObject {
 interface Props {
   speedMultiplier: number;
   onPlanetSelect: (planet: PlanetData | null, isSun?: boolean) => void;
+  onSatelliteSelect?: (sat: SatelliteData, planet: PlanetData) => void;
   onLoad: () => void;
 }
 
@@ -45,7 +52,7 @@ function easeInOut(t: number) {
 }
 
 const SolarSystemScene = forwardRef<SceneHandle, Props>(
-  ({ speedMultiplier, onPlanetSelect, onLoad }, ref) => {
+  ({ speedMultiplier, onPlanetSelect, onSatelliteSelect, onLoad }, ref) => {
     const containerRef = useRef<HTMLDivElement>(null);
     const speedRef = useRef(speedMultiplier);
     const planetObjectsRef = useRef<Map<string, PlanetObject>>(new Map());
@@ -57,22 +64,26 @@ const SolarSystemScene = forwardRef<SceneHandle, Props>(
     const spaceshipRef = useRef<THREE.Group | null>(null);
     const travelModeRef = useRef(false);
     const hoveredRef = useRef<THREE.Mesh | null>(null);
+    const sceneRef = useRef<THREE.Scene | null>(null);
+    const trailPointsRef = useRef<THREE.Vector3[]>([]);
+    const trailLineRef = useRef<THREE.Line | null>(null);
+    const clickableRef = useRef<Map<THREE.Mesh, ClickableInfo>>(new Map());
 
     useEffect(() => { speedRef.current = speedMultiplier; }, [speedMultiplier]);
 
-    // Expose imperative API
+    // ── Imperative API ────────────────────────────────────────────────────────
     useImperativeHandle(ref, () => ({
       travelTo(planetId, onArrived) {
-        const cam = cameraRef.current;
-        const ctrl = controlsRef.current;
+        const cam = cameraRef.current as THREE.PerspectiveCamera | null;
+        const ctrl = controlsRef.current as OrbitControls | null;
         if (!cam || !ctrl) return;
+        const safeC = cam, safeCt = ctrl;
 
         let worldPos = new THREE.Vector3(0, 0, 0);
         let offset = 12;
 
         if (planetId === 'sun') {
-          worldPos.set(0, 0, 0);
-          offset = 10;
+          offset = 12;
         } else {
           const obj = planetObjectsRef.current.get(planetId);
           if (obj) {
@@ -81,74 +92,125 @@ const SolarSystemScene = forwardRef<SceneHandle, Props>(
           }
         }
 
-        // Move spaceship
+        // Move spaceship to destination
         const ship = spaceshipRef.current;
         if (ship && travelModeRef.current) {
           ship.visible = true;
           ship.position.copy(worldPos);
-          ship.position.x += offset * 0.5;
-          ship.position.y += offset * 0.3;
+          ship.position.x += offset * 0.4;
+          ship.position.y += offset * 0.25;
         }
 
         const targetCamPos = worldPos.clone().add(new THREE.Vector3(0, offset * 0.5, offset));
-        const start = cam.position.clone();
-        const startTarget = ctrl.target.clone();
+        const start = safeC.position.clone();
+        const startTarget = safeCt.target.clone();
         let t = 0;
         lerpRef.current = true;
 
         function lerp() {
-          t += 0.015;
+          t += 0.014;
           if (t >= 1) {
-            cam.position.copy(targetCamPos);
-            ctrl.target.copy(worldPos);
-            ctrl.update();
+            safeC.position.copy(targetCamPos);
+            safeCt.target.copy(worldPos);
+            safeCt.update();
             lerpRef.current = false;
+
+            // Add to travel trail
+            if (travelModeRef.current) {
+              trailPointsRef.current.push(worldPos.clone());
+              updateTrail();
+            }
+
             onArrived?.();
             return;
           }
           const e = easeInOut(Math.min(t, 1));
-          cam.position.lerpVectors(start, targetCamPos, e);
-          ctrl.target.lerpVectors(startTarget, worldPos, e);
-          ctrl.update();
+          safeC.position.lerpVectors(start, targetCamPos, e);
+          safeCt.target.lerpVectors(startTarget, worldPos, e);
+          safeCt.update();
           requestAnimationFrame(lerp);
         }
         lerp();
       },
+
       resetCamera() {
         const cam = cameraRef.current;
         const ctrl = controlsRef.current;
         if (!cam || !ctrl) return;
-        const start = cam.position.clone();
-        const startTarget = ctrl.target.clone();
+        const safeC2 = cam, safeCt2 = ctrl;
+        const start = safeC2.position.clone();
+        const startTarget = safeCt2.target.clone();
         const end = new THREE.Vector3(0, 40, 120);
         let t = 0;
         lerpRef.current = true;
         function lerp() {
           t += 0.02;
           if (t >= 1) {
-            cam.position.copy(end);
-            ctrl.target.set(0, 0, 0);
-            ctrl.update();
+            safeC2.position.copy(end);
+            safeCt2.target.set(0, 0, 0);
+            safeCt2.update();
             lerpRef.current = false;
             return;
           }
           const e = easeInOut(t);
-          cam.position.lerpVectors(start, end, e);
-          ctrl.target.lerpVectors(startTarget, new THREE.Vector3(), e);
-          ctrl.update();
+          safeC2.position.lerpVectors(start, end, e);
+          safeCt2.target.lerpVectors(startTarget, new THREE.Vector3(), e);
+          safeCt2.update();
           requestAnimationFrame(lerp);
         }
         lerp();
       },
+
       setTravelMode(active) {
         travelModeRef.current = active;
-        if (spaceshipRef.current) {
-          spaceshipRef.current.visible = active;
+        if (spaceshipRef.current) spaceshipRef.current.visible = active;
+        if (!active) {
+          trailPointsRef.current = [];
+          if (trailLineRef.current && sceneRef.current) {
+            sceneRef.current.remove(trailLineRef.current);
+            trailLineRef.current.geometry.dispose();
+            (trailLineRef.current.material as THREE.Material).dispose();
+            trailLineRef.current = null;
+          }
         }
       },
     }));
 
+    function updateTrail() {
+      const sc = sceneRef.current;
+      if (!sc) return;
+      const pts = trailPointsRef.current;
+      if (pts.length < 2) return;
+
+      const curve = new THREE.CatmullRomCurve3(pts);
+      const curvePoints = curve.getPoints(pts.length * 30);
+
+      if (!trailLineRef.current) {
+        const geo = new THREE.BufferGeometry().setFromPoints(curvePoints);
+        const mat = new THREE.LineDashedMaterial({
+          color: 0x4a9eff,
+          transparent: true,
+          opacity: 0.65,
+          dashSize: 1.8,
+          gapSize: 0.9,
+          depthWrite: false,
+        });
+        const line = new THREE.Line(geo, mat);
+        line.computeLineDistances();
+        sc.add(line);
+        trailLineRef.current = line;
+      } else {
+        trailLineRef.current.geometry.setFromPoints(curvePoints);
+        trailLineRef.current.computeLineDistances();
+        trailLineRef.current.geometry.attributes.lineDistance.needsUpdate = true;
+      }
+    }
+
     const handlePlanetClick = useCallback(onPlanetSelect, [onPlanetSelect]);
+    const handleSatelliteClick = useCallback(
+      (sat: SatelliteData, planet: PlanetData) => onSatelliteSelect?.(sat, planet),
+      [onSatelliteSelect]
+    );
 
     useEffect(() => {
       if (!containerRef.current) return;
@@ -178,7 +240,7 @@ const SolarSystemScene = forwardRef<SceneHandle, Props>(
         return;
       }
 
-      // ─── Renderer ───────────────────────────────────────────────────
+      // ── Renderer ─────────────────────────────────────────────────────────
       let renderer: THREE.WebGLRenderer;
       try {
         renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
@@ -189,49 +251,61 @@ const SolarSystemScene = forwardRef<SceneHandle, Props>(
       renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
       renderer.setSize(container.clientWidth, container.clientHeight);
       renderer.toneMapping = THREE.ACESFilmicToneMapping;
-      renderer.toneMappingExposure = 1.0;
+      renderer.toneMappingExposure = 1.1;
       renderer.outputColorSpace = THREE.SRGBColorSpace;
+      renderer.shadowMap.enabled = true;
+      renderer.shadowMap.type = THREE.PCFSoftShadowMap;
       container.appendChild(renderer.domElement);
 
-      // ─── Scene ──────────────────────────────────────────────────────
+      // ── Scene ─────────────────────────────────────────────────────────────
       const scene = new THREE.Scene();
       scene.background = new THREE.Color('#000008');
-      scene.fog = new THREE.FogExp2('#000010', 0.002);
+      scene.fog = new THREE.FogExp2('#000010', 0.0018);
+      sceneRef.current = scene;
 
-      // ─── Camera ─────────────────────────────────────────────────────
+      // ── Camera ────────────────────────────────────────────────────────────
       const camera = new THREE.PerspectiveCamera(
         55, container.clientWidth / container.clientHeight, 0.05, 2000
       );
       camera.position.set(0, 40, 120);
       cameraRef.current = camera;
 
-      // ─── Controls ───────────────────────────────────────────────────
+      // ── Controls ──────────────────────────────────────────────────────────
       const controls = new OrbitControls(camera, renderer.domElement);
       controls.enableDamping = true;
       controls.dampingFactor = 0.06;
       controls.minDistance = 1.5;
-      controls.maxDistance = 380;
+      controls.maxDistance = 400;
       controls.target.set(0, 0, 0);
       controlsRef.current = controls;
 
-      // ─── Post-processing (Bloom) ────────────────────────────────────
+      // ── Post-processing ───────────────────────────────────────────────────
       const composer = new EffectComposer(renderer);
       composer.addPass(new RenderPass(scene, camera));
       const bloomPass = new UnrealBloomPass(
         new THREE.Vector2(container.clientWidth, container.clientHeight),
-        0.55, 0.55, 0.78
+        0.5, 0.52, 0.80
       );
       composer.addPass(bloomPass);
       composer.addPass(new OutputPass());
 
-      // ─── Lighting ───────────────────────────────────────────────────
-      scene.add(new THREE.AmbientLight(0x111133, 1.0));
-      const sunLight = new THREE.PointLight(0xfff5d8, 4.0, 700);
+      // ── Lighting ──────────────────────────────────────────────────────────
+      // Very low ambient so the dark side is dark
+      scene.add(new THREE.AmbientLight(0x0a0a1e, 0.8));
+      // Hemisphere: subtle blue sky, no ground bounce
+      const hemi = new THREE.HemisphereLight(0x0808aa, 0x000000, 0.2);
+      scene.add(hemi);
+      // Sun point light — main source
+      const sunLight = new THREE.PointLight(0xfff5d0, 6.0, 800);
+      sunLight.castShadow = true;
+      sunLight.shadow.mapSize.set(1024, 1024);
+      sunLight.shadow.radius = 4;
       scene.add(sunLight);
-      const sunLight2 = new THREE.PointLight(0xff9900, 1.2, 250);
-      scene.add(sunLight2);
+      // Warm fill for the near side
+      const sunFill = new THREE.PointLight(0xff8822, 1.4, 200);
+      scene.add(sunFill);
 
-      // ─── Stars (2 parallax layers) ──────────────────────────────────
+      // ── Stars ─────────────────────────────────────────────────────────────
       const starTex = createStarTexture();
 
       function makeStarLayer(count: number, rMin: number, rMax: number, size: number, speed: number) {
@@ -245,102 +319,115 @@ const SolarSystemScene = forwardRef<SceneHandle, Props>(
           pos[i * 3 + 1] = r * Math.sin(phi) * Math.sin(theta);
           pos[i * 3 + 2] = r * Math.cos(phi);
           const c = Math.random();
-          if (c < 0.65) { col[i*3]=1; col[i*3+1]=1; col[i*3+2]=1; }
-          else if (c < 0.82) { col[i*3]=0.8; col[i*3+1]=0.85; col[i*3+2]=1; }
-          else { col[i*3]=1; col[i*3+1]=0.9; col[i*3+2]=0.6; }
+          if (c < 0.62) { col[i*3]=1; col[i*3+1]=1; col[i*3+2]=1; }
+          else if (c < 0.80) { col[i*3]=0.75; col[i*3+1]=0.82; col[i*3+2]=1; }
+          else { col[i*3]=1; col[i*3+1]=0.88; col[i*3+2]=0.55; }
         }
         const geo = new THREE.BufferGeometry();
         geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
         geo.setAttribute('color', new THREE.BufferAttribute(col, 3));
-        const mat = new THREE.PointsMaterial({ size, map: starTex, vertexColors: true, transparent: true, sizeAttenuation: true, alphaTest: 0.01, depthWrite: false });
+        const mat = new THREE.PointsMaterial({
+          size, map: starTex, vertexColors: true,
+          transparent: true, sizeAttenuation: true, alphaTest: 0.01, depthWrite: false,
+        });
         const pts = new THREE.Points(geo, mat);
         scene.add(pts);
         return { pts, speed };
       }
 
       const starLayers = [
-        makeStarLayer(3500, 350, 500, 1.4, 0.00004),
-        makeStarLayer(4000, 500, 800, 0.8, 0.00001),
+        makeStarLayer(4000, 350, 520, 1.5, 0.00004),
+        makeStarLayer(5000, 520, 900, 0.8, 0.00001),
       ];
 
-      // ─── Sun ────────────────────────────────────────────────────────
-      const sunGeo = new THREE.SphereGeometry(SUN_DATA.radius, 48, 48);
+      // ── Sun ───────────────────────────────────────────────────────────────
+      const sunGeo = new THREE.SphereGeometry(SUN_DATA.radius, 56, 56);
       const sunMat = new THREE.MeshStandardMaterial({
         map: createSunTexture(),
-        emissive: new THREE.Color('#ff9900'),
-        emissiveIntensity: 2.0,
-        roughness: 1,
+        emissive: new THREE.Color('#ff8800'),
+        emissiveIntensity: 2.2,
+        roughness: 1.0,
+        metalness: 0,
       });
       const sunMesh = new THREE.Mesh(sunGeo, sunMat);
       scene.add(sunMesh);
       sunMeshRef.current = sunMesh;
+      clickableRef.current.set(sunMesh, { type: 'sun' });
 
-      // Sun glow layers
-      [{ r: 1.25, c: '#ff7700', o: 0.18 }, { r: 1.55, c: '#ff4400', o: 0.08 }, { r: 2.0, c: '#ff2200', o: 0.03 }]
-        .forEach(({ r, c, o }) => {
-          const g = new THREE.SphereGeometry(SUN_DATA.radius * r, 32, 32);
-          const m = new THREE.MeshBasicMaterial({ color: c, transparent: true, opacity: o, side: THREE.BackSide, depthWrite: false });
-          scene.add(new THREE.Mesh(g, m));
+      // Sun glow halos
+      [
+        { r: 1.22, c: '#ff7700', o: 0.20 },
+        { r: 1.52, c: '#ff4400', o: 0.09 },
+        { r: 2.1,  c: '#ff2200', o: 0.04 },
+      ].forEach(({ r, c, o }) => {
+        const m = new THREE.MeshBasicMaterial({
+          color: c, transparent: true, opacity: o, side: THREE.BackSide, depthWrite: false,
         });
+        scene.add(new THREE.Mesh(new THREE.SphereGeometry(SUN_DATA.radius * r, 32, 32), m));
+      });
 
-      // ─── Orbit ring helper ──────────────────────────────────────────
-      function createOrbitRing(radius: number, opacity = 0.3) {
+      // ── Orbit ring helper ─────────────────────────────────────────────────
+      function createOrbitRing(radius: number, opacity = 0.28, color = 0x2a4060) {
         const pts: THREE.Vector3[] = [];
         for (let i = 0; i <= 128; i++) {
           const a = (i / 128) * Math.PI * 2;
           pts.push(new THREE.Vector3(Math.cos(a) * radius, 0, Math.sin(a) * radius));
         }
         const geo = new THREE.BufferGeometry().setFromPoints(pts);
-        const mat = new THREE.LineBasicMaterial({ color: 0x3a4f66, transparent: true, opacity, depthWrite: false });
-        return new THREE.Line(geo, mat);
+        return new THREE.Line(geo, new THREE.LineBasicMaterial({
+          color, transparent: true, opacity, depthWrite: false,
+        }));
       }
 
-      // ─── Planets ────────────────────────────────────────────────────
+      // ── Planets ───────────────────────────────────────────────────────────
       const planetObjects = new Map<string, PlanetObject>();
+      const clickable = clickableRef.current;
 
       PLANETS.forEach((planet) => {
         scene.add(createOrbitRing(planet.distance));
         const pivot = new THREE.Object3D();
         scene.add(pivot);
 
-        const geo = new THREE.SphereGeometry(planet.radius, 40, 40);
-        const tex = createPlanetTextureByType(planet.textureType, planet.color, planet.stripeColors);
+        const geo = new THREE.SphereGeometry(planet.radius, 56, 56);
+        const textures = createPlanetTextureByType(planet.textureType, planet.color);
         const mat = new THREE.MeshStandardMaterial({
-          map: tex,
-          roughness: 0.82,
-          metalness: 0.04,
+          map: textures.map,
+          normalMap: textures.normalMap,
+          normalScale: new THREE.Vector2(1.2, 1.2),
+          roughness: planet.id === 'earth' ? 0.72
+                   : (planet.id === 'jupiter' || planet.id === 'saturn' || planet.id === 'uranus' || planet.id === 'neptune') ? 0.88
+                   : 0.82,
+          metalness: 0.02,
           emissive: new THREE.Color(planet.emissive ?? '#000000'),
-          emissiveIntensity: 0.12,
+          emissiveIntensity: 0.08,
         });
+
         const mesh = new THREE.Mesh(geo, mat);
         mesh.position.set(planet.distance, 0, 0);
         mesh.castShadow = true;
         mesh.receiveShadow = true;
         if (planet.tilt) mesh.rotation.z = planet.tilt;
         pivot.add(mesh);
+        clickable.set(mesh, { type: 'planet', planet });
 
-        // Atmosphere
+        // Atmosphere glow
         if (planet.atmosphereColor) {
-          const atmGeo = new THREE.SphereGeometry(planet.radius * 1.07, 32, 32);
           const atmMat = new THREE.MeshBasicMaterial({
             color: new THREE.Color(planet.atmosphereColor),
-            transparent: true, opacity: 0.13, side: THREE.BackSide, depthWrite: false,
+            transparent: true, opacity: 0.12, side: THREE.BackSide, depthWrite: false,
           });
-          mesh.add(new THREE.Mesh(atmGeo, atmMat));
-          // Second glow layer
-          const atm2Geo = new THREE.SphereGeometry(planet.radius * 1.18, 32, 32);
+          mesh.add(new THREE.Mesh(new THREE.SphereGeometry(planet.radius * 1.06, 32, 32), atmMat));
           const atm2Mat = new THREE.MeshBasicMaterial({
             color: new THREE.Color(planet.atmosphereColor),
             transparent: true, opacity: 0.05, side: THREE.BackSide, depthWrite: false,
           });
-          mesh.add(new THREE.Mesh(atm2Geo, atm2Mat));
+          mesh.add(new THREE.Mesh(new THREE.SphereGeometry(planet.radius * 1.18, 32, 32), atm2Mat));
         }
 
         // Saturn rings
         if (planet.hasRings) {
-          const ringGeo = new THREE.RingGeometry(planet.ringInner!, planet.ringOuter!, 128);
+          const ringGeo = new THREE.RingGeometry(planet.ringInner!, planet.ringOuter!, 140);
           const ringTex = createSaturnRingTexture();
-          // Fix UVs for ring
           const pos = ringGeo.attributes.position as THREE.BufferAttribute;
           const uv = ringGeo.attributes.uv as THREE.BufferAttribute;
           for (let i = 0; i < pos.count; i++) {
@@ -349,7 +436,7 @@ const SolarSystemScene = forwardRef<SceneHandle, Props>(
             uv.setXY(i, (d - planet.ringInner!) / (planet.ringOuter! - planet.ringInner!), 0.5);
           }
           const ringMat = new THREE.MeshBasicMaterial({
-            map: ringTex, transparent: true, opacity: planet.ringOpacity ?? 0.75,
+            map: ringTex, transparent: true, opacity: planet.ringOpacity ?? 0.78,
             side: THREE.DoubleSide, depthWrite: false,
           });
           const ringMesh = new THREE.Mesh(ringGeo, ringMat);
@@ -363,18 +450,33 @@ const SolarSystemScene = forwardRef<SceneHandle, Props>(
           const satPivot = new THREE.Object3D();
           mesh.add(satPivot);
 
-          const satGeo = new THREE.SphereGeometry(sat.radius, 18, 18);
-          const satTex = (sat.id === 'luna') ? createMoonTexture() : createPlanetTextureByType('rocky', sat.color);
+          const satGeo = new THREE.SphereGeometry(sat.radius, 20, 20);
+
+          let satMap, satNormal;
+          if (sat.id === 'luna') {
+            const mt = createMoonTextures();
+            satMap = mt.map; satNormal = mt.normalMap;
+          } else {
+            const mt = createPlanetTextureByType('rocky', sat.color);
+            satMap = mt.map; satNormal = mt.normalMap;
+          }
+
           const satMat = new THREE.MeshStandardMaterial({
-            map: satTex, roughness: 0.9, metalness: 0.0,
+            map: satMap,
+            normalMap: satNormal,
+            normalScale: new THREE.Vector2(0.8, 0.8),
+            roughness: 0.92,
+            metalness: 0.0,
             emissive: sat.isArtificial ? new THREE.Color(sat.color) : new THREE.Color('#000000'),
-            emissiveIntensity: sat.isArtificial ? 0.6 : 0.0,
+            emissiveIntensity: sat.isArtificial ? 0.7 : 0.0,
           });
           const satMesh = new THREE.Mesh(satGeo, satMat);
           satMesh.position.set(sat.orbitRadius, 0, 0);
+          satMesh.castShadow = true;
           satPivot.add(satMesh);
+          clickable.set(satMesh, { type: 'satellite', sat, planet });
 
-          // Sat orbit ring
+          // Satellite orbit ring
           const satOrbPts: THREE.Vector3[] = [];
           for (let i = 0; i <= 64; i++) {
             const a = (i / 64) * Math.PI * 2;
@@ -382,12 +484,15 @@ const SolarSystemScene = forwardRef<SceneHandle, Props>(
           }
           const satOrbGeo = new THREE.BufferGeometry().setFromPoints(satOrbPts);
           const satOrbMat = new THREE.LineBasicMaterial({
-            color: sat.isArtificial ? 0x4488ff : 0x334455,
-            transparent: true, opacity: sat.isArtificial ? 0.6 : 0.25, depthWrite: false,
+            color: sat.isArtificial ? 0x3399ff : 0x223344,
+            transparent: true, opacity: sat.isArtificial ? 0.55 : 0.22, depthWrite: false,
           });
           mesh.add(new THREE.Line(satOrbGeo, satOrbMat));
 
-          satObjects.push({ pivot: satPivot, mesh: satMesh, angle: Math.random() * Math.PI * 2, speed: sat.orbitSpeed });
+          satObjects.push({
+            pivot: satPivot, mesh: satMesh,
+            angle: Math.random() * Math.PI * 2, speed: sat.orbitSpeed,
+          });
         });
 
         const startAngle = Math.random() * Math.PI * 2;
@@ -397,56 +502,56 @@ const SolarSystemScene = forwardRef<SceneHandle, Props>(
 
       planetObjectsRef.current = planetObjects;
 
-      // ─── Asteroid Belt ──────────────────────────────────────────────
-      const beltCount = 2800;
+      // ── Asteroid Belt ─────────────────────────────────────────────────────
+      const beltCount = 3200;
       const beltPos = new Float32Array(beltCount * 3);
       const beltCol = new Float32Array(beltCount * 3);
       for (let i = 0; i < beltCount; i++) {
         const angle = Math.random() * Math.PI * 2;
         const r = 33 + Math.random() * 8;
-        const y = (Math.random() - 0.5) * 2.5;
+        const y = (Math.random() - 0.5) * 2.8;
         beltPos[i * 3] = Math.cos(angle) * r;
         beltPos[i * 3 + 1] = y;
         beltPos[i * 3 + 2] = Math.sin(angle) * r;
-        const g = 0.35 + Math.random() * 0.35;
-        beltCol[i * 3] = g + 0.05; beltCol[i * 3 + 1] = g; beltCol[i * 3 + 2] = g * 0.88;
+        const g = 0.32 + Math.random() * 0.38;
+        beltCol[i * 3] = g + 0.06; beltCol[i * 3 + 1] = g; beltCol[i * 3 + 2] = g * 0.85;
       }
       const beltGeo = new THREE.BufferGeometry();
       beltGeo.setAttribute('position', new THREE.BufferAttribute(beltPos, 3));
       beltGeo.setAttribute('color', new THREE.BufferAttribute(beltCol, 3));
-      const beltMat = new THREE.PointsMaterial({ size: 0.5, vertexColors: true, transparent: true, opacity: 0.65, sizeAttenuation: true, depthWrite: false });
+      const beltMat = new THREE.PointsMaterial({
+        size: 0.55, vertexColors: true, transparent: true, opacity: 0.62, sizeAttenuation: true, depthWrite: false,
+      });
       const asteroidBelt = new THREE.Points(beltGeo, beltMat);
       scene.add(asteroidBelt);
 
-      // ─── Spaceship ──────────────────────────────────────────────────
+      // ── Spaceship ─────────────────────────────────────────────────────────
       function createSpaceship(): THREE.Group {
         const group = new THREE.Group();
-        const bodyMat = new THREE.MeshStandardMaterial({ color: '#c0c8e0', roughness: 0.25, metalness: 0.8 });
-        const darkMat = new THREE.MeshStandardMaterial({ color: '#8090b0', roughness: 0.3, metalness: 0.7 });
-        // Body
-        const body = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.10, 0.35, 10), bodyMat);
+        const bodyMat = new THREE.MeshStandardMaterial({ color: '#c0c8e0', roughness: 0.22, metalness: 0.82 });
+        const darkMat = new THREE.MeshStandardMaterial({ color: '#7888a8', roughness: 0.32, metalness: 0.72 });
+        const body = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.11, 0.38, 12), bodyMat);
         group.add(body);
-        // Nose
-        const nose = new THREE.Mesh(new THREE.ConeGeometry(0.06, 0.18, 10), bodyMat);
-        nose.position.y = 0.265; group.add(nose);
-        // Wings
-        const wing = new THREE.Mesh(new THREE.BoxGeometry(0.55, 0.018, 0.20), darkMat);
+        const nose = new THREE.Mesh(new THREE.ConeGeometry(0.06, 0.20, 12), bodyMat);
+        nose.position.y = 0.29; group.add(nose);
+        const wing = new THREE.Mesh(new THREE.BoxGeometry(0.58, 0.016, 0.22), darkMat);
         wing.position.y = -0.06; group.add(wing);
-        const wingB = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.012, 0.12), darkMat);
-        wingB.position.set(0, -0.10, 0.08); group.add(wingB);
-        // Cockpit
-        const cockpitMat = new THREE.MeshStandardMaterial({ color: '#80ccff', roughness: 0.05, metalness: 0.5, transparent: true, opacity: 0.85, emissive: new THREE.Color('#4488cc'), emissiveIntensity: 0.4 });
-        const cockpit = new THREE.Mesh(new THREE.SphereGeometry(0.065, 12, 12), cockpitMat);
-        cockpit.position.y = 0.18; group.add(cockpit);
-        // Engine glow
-        const engineMat = new THREE.MeshBasicMaterial({ color: '#4488ff', transparent: true, opacity: 0.9 });
-        const engine = new THREE.Mesh(new THREE.SphereGeometry(0.045, 8, 8), engineMat);
-        engine.position.y = -0.21; group.add(engine);
-        // Engine trail
-        const trailMat = new THREE.MeshBasicMaterial({ color: '#88aaff', transparent: true, opacity: 0.4 });
-        const trail = new THREE.Mesh(new THREE.ConeGeometry(0.035, 0.18, 8), trailMat);
-        trail.position.y = -0.30; trail.rotation.z = Math.PI; group.add(trail);
-        group.scale.setScalar(1.5);
+        const wingB = new THREE.Mesh(new THREE.BoxGeometry(0.32, 0.011, 0.13), darkMat);
+        wingB.position.set(0, -0.11, 0.09); group.add(wingB);
+        const cockpitMat = new THREE.MeshStandardMaterial({
+          color: '#80ccff', roughness: 0.04, metalness: 0.5,
+          transparent: true, opacity: 0.85,
+          emissive: new THREE.Color('#3388cc'), emissiveIntensity: 0.5,
+        });
+        const cockpit = new THREE.Mesh(new THREE.SphereGeometry(0.065, 14, 14), cockpitMat);
+        cockpit.position.y = 0.19; group.add(cockpit);
+        const engineMat = new THREE.MeshBasicMaterial({ color: '#4488ff', transparent: true, opacity: 0.92 });
+        const engine = new THREE.Mesh(new THREE.SphereGeometry(0.048, 10, 10), engineMat);
+        engine.position.y = -0.22; group.add(engine);
+        const trailMat = new THREE.MeshBasicMaterial({ color: '#88aaff', transparent: true, opacity: 0.42 });
+        const trail = new THREE.Mesh(new THREE.ConeGeometry(0.036, 0.20, 10), trailMat);
+        trail.position.y = -0.32; trail.rotation.z = Math.PI; group.add(trail);
+        group.scale.setScalar(1.6);
         group.visible = false;
         return group;
       }
@@ -454,27 +559,21 @@ const SolarSystemScene = forwardRef<SceneHandle, Props>(
       scene.add(spaceship);
       spaceshipRef.current = spaceship;
 
-      // ─── Raycaster ──────────────────────────────────────────────────
+      // ── Raycaster ─────────────────────────────────────────────────────────
       const raycaster = new THREE.Raycaster();
       const mouse = new THREE.Vector2();
-
-      function getAllPlanetMeshes() {
-        const meshes: THREE.Mesh[] = [sunMesh];
-        planetObjects.forEach((o) => meshes.push(o.mesh));
-        return meshes;
-      }
 
       function animateCameraTo(worldPos: THREE.Vector3, radius: number) {
         const cam = cameraRef.current!;
         const ctrl = controlsRef.current!;
         const offset = radius * 6 + 5;
-        const targetPos = worldPos.clone().add(new THREE.Vector3(0, offset * 0.45, offset));
+        const targetPos = worldPos.clone().add(new THREE.Vector3(0, offset * 0.42, offset));
         const start = cam.position.clone();
         const startTarget = ctrl.target.clone();
         let t = 0;
         lerpRef.current = true;
         function lerp() {
-          t += 0.018;
+          t += 0.016;
           if (t >= 1) {
             cam.position.copy(targetPos);
             ctrl.target.copy(worldPos);
@@ -497,22 +596,29 @@ const SolarSystemScene = forwardRef<SceneHandle, Props>(
         mouse.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
         mouse.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
         raycaster.setFromCamera(mouse, camera);
-        const hits = raycaster.intersectObjects(getAllPlanetMeshes(), false);
+
+        const allMeshes = Array.from(clickable.keys());
+        const hits = raycaster.intersectObjects(allMeshes, false);
         if (!hits.length) { handlePlanetClick(null, false); return; }
-        const hit = hits[0].object as THREE.Mesh;
-        if (hit === sunMesh) {
+
+        const hitMesh = hits[0].object as THREE.Mesh;
+        const info = clickable.get(hitMesh);
+        if (!info) return;
+
+        if (info.type === 'sun') {
           handlePlanetClick(null, true);
           animateCameraTo(new THREE.Vector3(0, 0, 0), SUN_DATA.radius);
-          return;
+        } else if (info.type === 'planet' && info.planet) {
+          handlePlanetClick(info.planet, false);
+          const wp = new THREE.Vector3();
+          hitMesh.getWorldPosition(wp);
+          animateCameraTo(wp, info.planet.radius);
+        } else if (info.type === 'satellite' && info.sat && info.planet) {
+          handleSatelliteClick(info.sat, info.planet);
+          const wp = new THREE.Vector3();
+          hitMesh.getWorldPosition(wp);
+          animateCameraTo(wp, info.sat.radius * 8);
         }
-        planetObjects.forEach((obj) => {
-          if (obj.mesh === hit) {
-            handlePlanetClick(obj.data, false);
-            const wp = new THREE.Vector3();
-            obj.mesh.getWorldPosition(wp);
-            animateCameraTo(wp, obj.data.radius);
-          }
-        });
       }
 
       function onMouseMove(e: MouseEvent) {
@@ -520,18 +626,28 @@ const SolarSystemScene = forwardRef<SceneHandle, Props>(
         mouse.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
         mouse.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
         raycaster.setFromCamera(mouse, camera);
-        const hits = raycaster.intersectObjects(getAllPlanetMeshes(), false);
+
+        const allMeshes = Array.from(clickable.keys());
+        const hits = raycaster.intersectObjects(allMeshes, false);
         const prev = hoveredRef.current;
+
         if (hits.length) {
-          const hit = hits[0].object as THREE.Mesh;
-          if (prev !== hit) {
-            if (prev && prev !== sunMesh) (prev.material as THREE.MeshStandardMaterial).emissiveIntensity = 0.12;
-            hoveredRef.current = hit;
-            if (hit !== sunMesh) (hit.material as THREE.MeshStandardMaterial).emissiveIntensity = 0.35;
+          const hitMesh = hits[0].object as THREE.Mesh;
+          if (prev !== hitMesh) {
+            if (prev) {
+              const prevMat = prev.material as THREE.MeshStandardMaterial;
+              if (prevMat.emissiveIntensity !== undefined) prevMat.emissiveIntensity = 0.08;
+            }
+            hoveredRef.current = hitMesh;
+            const hitMat = hitMesh.material as THREE.MeshStandardMaterial;
+            if (hitMat.emissiveIntensity !== undefined) hitMat.emissiveIntensity = 0.38;
           }
           renderer.domElement.style.cursor = 'pointer';
         } else {
-          if (prev && prev !== sunMesh) (prev.material as THREE.MeshStandardMaterial).emissiveIntensity = 0.12;
+          if (prev) {
+            const prevMat = prev.material as THREE.MeshStandardMaterial;
+            if (prevMat.emissiveIntensity !== undefined) prevMat.emissiveIntensity = 0.08;
+          }
           hoveredRef.current = null;
           renderer.domElement.style.cursor = 'default';
         }
@@ -540,12 +656,14 @@ const SolarSystemScene = forwardRef<SceneHandle, Props>(
       renderer.domElement.addEventListener('click', onClick);
       renderer.domElement.addEventListener('mousemove', onMouseMove);
 
-      // ─── Animation loop ─────────────────────────────────────────────
-      const clock = new THREE.Clock();
+      // ── Animation loop ────────────────────────────────────────────────────
+      let lastTime = performance.now();
 
       function animate() {
         frameRef.current = requestAnimationFrame(animate);
-        const delta = Math.min(clock.getDelta(), 0.05);
+        const now = performance.now();
+        const delta = Math.min((now - lastTime) / 1000, 0.05);
+        lastTime = now;
         const speed = speedRef.current;
 
         sunMesh.rotation.y += 0.004 * delta * 60;
@@ -560,16 +678,14 @@ const SolarSystemScene = forwardRef<SceneHandle, Props>(
           });
         });
 
-        asteroidBelt.rotation.y += 0.002 * delta * speed;
-
-        // Parallax stars
+        asteroidBelt.rotation.y += 0.0018 * delta * speed;
         starLayers.forEach(({ pts, speed: s }) => { pts.rotation.y += s * delta * 60; });
 
         // Spaceship engine pulse
         if (spaceship.visible) {
-          const t = Date.now() * 0.003;
+          const t = now * 0.003;
           const engine = spaceship.children[spaceship.children.length - 2] as THREE.Mesh;
-          if (engine) (engine.material as THREE.MeshBasicMaterial).opacity = 0.7 + Math.sin(t) * 0.25;
+          if (engine) (engine.material as THREE.MeshBasicMaterial).opacity = 0.72 + Math.sin(t) * 0.24;
         }
 
         controls.update();
@@ -577,13 +693,14 @@ const SolarSystemScene = forwardRef<SceneHandle, Props>(
       }
       animate();
 
-      // ─── Resize ─────────────────────────────────────────────────────
+      // ── Resize ────────────────────────────────────────────────────────────
       function onResize() {
         const w = container.clientWidth, h = container.clientHeight;
         camera.aspect = w / h;
         camera.updateProjectionMatrix();
         renderer.setSize(w, h);
         composer.setSize(w, h);
+        bloomPass.resolution.set(w, h);
       }
       window.addEventListener('resize', onResize);
 
@@ -597,6 +714,8 @@ const SolarSystemScene = forwardRef<SceneHandle, Props>(
         renderer.dispose();
         composer.dispose();
         if (container.contains(renderer.domElement)) container.removeChild(renderer.domElement);
+        sceneRef.current = null;
+        clickableRef.current.clear();
       };
     }, []); // eslint-disable-line
 
