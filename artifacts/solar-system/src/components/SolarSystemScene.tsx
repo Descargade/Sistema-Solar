@@ -9,7 +9,7 @@ import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js'
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { PLANETS, SUN_DATA, type PlanetData, type SatelliteData } from '@/data/planets';
 import {
-  createSunTexture, createPlanetTextureByType, createMoonTextures,
+  createSunTexture, createPlanetTextureByType, createSatelliteTextures,
   createSaturnRingTexture, createStarTexture,
 } from '@/utils/textures';
 
@@ -108,7 +108,7 @@ const SolarSystemScene = forwardRef<SceneHandle, Props>(
         lerpRef.current = true;
 
         function lerp() {
-          t += 0.014;
+          t += 0.005;
           if (t >= 1) {
             safeC.position.copy(targetCamPos);
             safeCt.target.copy(worldPos);
@@ -186,23 +186,23 @@ const SolarSystemScene = forwardRef<SceneHandle, Props>(
       const curvePoints = curve.getPoints(pts.length * 30);
 
       if (!trailLineRef.current) {
-        const geo = new THREE.BufferGeometry().setFromPoints(curvePoints);
         const mat = new THREE.LineDashedMaterial({
           color: 0x4a9eff,
           transparent: true,
-          opacity: 0.65,
-          dashSize: 1.8,
-          gapSize: 0.9,
+          opacity: 0.70,
+          dashSize: 2.0,
+          gapSize: 1.0,
           depthWrite: false,
         });
-        const line = new THREE.Line(geo, mat);
+        const line = new THREE.Line(new THREE.BufferGeometry().setFromPoints(curvePoints), mat);
         line.computeLineDistances();
         sc.add(line);
         trailLineRef.current = line;
       } else {
-        trailLineRef.current.geometry.setFromPoints(curvePoints);
+        // Dispose old geometry before replacing to avoid buffer size warning
+        trailLineRef.current.geometry.dispose();
+        trailLineRef.current.geometry = new THREE.BufferGeometry().setFromPoints(curvePoints);
         trailLineRef.current.computeLineDistances();
-        trailLineRef.current.geometry.attributes.lineDistance.needsUpdate = true;
       }
     }
 
@@ -254,7 +254,7 @@ const SolarSystemScene = forwardRef<SceneHandle, Props>(
       renderer.toneMappingExposure = 1.1;
       renderer.outputColorSpace = THREE.SRGBColorSpace;
       renderer.shadowMap.enabled = true;
-      renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+      renderer.shadowMap.type = THREE.PCFShadowMap;
       container.appendChild(renderer.domElement);
 
       // ── Scene ─────────────────────────────────────────────────────────────
@@ -290,19 +290,19 @@ const SolarSystemScene = forwardRef<SceneHandle, Props>(
       composer.addPass(new OutputPass());
 
       // ── Lighting ──────────────────────────────────────────────────────────
-      // Very low ambient so the dark side is dark
-      scene.add(new THREE.AmbientLight(0x0a0a1e, 0.8));
-      // Hemisphere: subtle blue sky, no ground bounce
-      const hemi = new THREE.HemisphereLight(0x0808aa, 0x000000, 0.2);
+      // Very low ambient so the dark side is truly dark
+      scene.add(new THREE.AmbientLight(0x060814, 0.4));
+      // Hemisphere: subtle deep space tint
+      const hemi = new THREE.HemisphereLight(0x0a0a22, 0x000000, 0.15);
       scene.add(hemi);
-      // Sun point light — main source
-      const sunLight = new THREE.PointLight(0xfff5d0, 6.0, 800);
+      // Sun point light — main source, physically stronger
+      const sunLight = new THREE.PointLight(0xfff8e8, 9.0, 1000);
       sunLight.castShadow = true;
-      sunLight.shadow.mapSize.set(1024, 1024);
-      sunLight.shadow.radius = 4;
+      sunLight.shadow.mapSize.set(2048, 2048);
+      sunLight.shadow.radius = 2;
       scene.add(sunLight);
-      // Warm fill for the near side
-      const sunFill = new THREE.PointLight(0xff8822, 1.4, 200);
+      // Warm secondary fill (limb brightening simulation)
+      const sunFill = new THREE.PointLight(0xff9944, 1.8, 180);
       scene.add(sunFill);
 
       // ── Stars ─────────────────────────────────────────────────────────────
@@ -388,18 +388,23 @@ const SolarSystemScene = forwardRef<SceneHandle, Props>(
         const pivot = new THREE.Object3D();
         scene.add(pivot);
 
-        const geo = new THREE.SphereGeometry(planet.radius, 56, 56);
+        const geo = new THREE.SphereGeometry(planet.radius, 64, 64);
         const textures = createPlanetTextureByType(planet.textureType, planet.color);
+        const isGasGiant = ['jupiter','saturn','uranus','neptune'].includes(planet.id);
+        const isRocky    = ['mercury','venus','earth','mars'].includes(planet.id);
         const mat = new THREE.MeshStandardMaterial({
           map: textures.map,
           normalMap: textures.normalMap,
-          normalScale: new THREE.Vector2(1.2, 1.2),
-          roughness: planet.id === 'earth' ? 0.72
-                   : (planet.id === 'jupiter' || planet.id === 'saturn' || planet.id === 'uranus' || planet.id === 'neptune') ? 0.88
-                   : 0.82,
-          metalness: 0.02,
+          normalScale: new THREE.Vector2(
+            isRocky ? 2.2 : isGasGiant ? 0.6 : 1.2,
+            isRocky ? 2.2 : isGasGiant ? 0.6 : 1.2
+          ),
+          ...(textures.roughnessMap
+            ? { roughnessMap: textures.roughnessMap }
+            : { roughness: isGasGiant ? 0.88 : 0.78 }),
+          metalness: 0.0,
           emissive: new THREE.Color(planet.emissive ?? '#000000'),
-          emissiveIntensity: 0.08,
+          emissiveIntensity: 0.06,
         });
 
         const mesh = new THREE.Mesh(geo, mat);
@@ -410,18 +415,20 @@ const SolarSystemScene = forwardRef<SceneHandle, Props>(
         pivot.add(mesh);
         clickable.set(mesh, { type: 'planet', planet });
 
-        // Atmosphere glow
+        // Atmosphere glow — layered for more physical look
         if (planet.atmosphereColor) {
-          const atmMat = new THREE.MeshBasicMaterial({
-            color: new THREE.Color(planet.atmosphereColor),
-            transparent: true, opacity: 0.12, side: THREE.BackSide, depthWrite: false,
+          const ac = new THREE.Color(planet.atmosphereColor);
+          const layers = [
+            { scale: 1.04, opacity: 0.22 },
+            { scale: 1.10, opacity: 0.10 },
+            { scale: 1.22, opacity: 0.04 },
+          ];
+          layers.forEach(({ scale, opacity }) => {
+            mesh.add(new THREE.Mesh(
+              new THREE.SphereGeometry(planet.radius * scale, 32, 32),
+              new THREE.MeshBasicMaterial({ color: ac, transparent: true, opacity, side: THREE.BackSide, depthWrite: false })
+            ));
           });
-          mesh.add(new THREE.Mesh(new THREE.SphereGeometry(planet.radius * 1.06, 32, 32), atmMat));
-          const atm2Mat = new THREE.MeshBasicMaterial({
-            color: new THREE.Color(planet.atmosphereColor),
-            transparent: true, opacity: 0.05, side: THREE.BackSide, depthWrite: false,
-          });
-          mesh.add(new THREE.Mesh(new THREE.SphereGeometry(planet.radius * 1.18, 32, 32), atm2Mat));
         }
 
         // Saturn rings
@@ -448,28 +455,38 @@ const SolarSystemScene = forwardRef<SceneHandle, Props>(
         const satObjects: SatelliteObject[] = [];
         planet.satellites.forEach((sat) => {
           const satPivot = new THREE.Object3D();
+          // Slight orbital inclination for natural moons for visual realism
+          if (!sat.isArtificial) satPivot.rotation.x = (Math.random() - 0.5) * 0.18;
           mesh.add(satPivot);
 
-          const satGeo = new THREE.SphereGeometry(sat.radius, 20, 20);
+          const satSegments = sat.isArtificial ? 12 : 24;
+          const satGeo = new THREE.SphereGeometry(sat.radius, satSegments, satSegments);
 
-          let satMap, satNormal;
-          if (sat.id === 'luna') {
-            const mt = createMoonTextures();
-            satMap = mt.map; satNormal = mt.normalMap;
+          let satMat: THREE.MeshStandardMaterial;
+          if (sat.isArtificial) {
+            // Artificial satellites: metallic look with gentle glow
+            satMat = new THREE.MeshStandardMaterial({
+              color: new THREE.Color(sat.color),
+              roughness: 0.18,
+              metalness: 0.85,
+              emissive: new THREE.Color(sat.color),
+              emissiveIntensity: 0.55,
+            });
           } else {
-            const mt = createPlanetTextureByType('rocky', sat.color);
-            satMap = mt.map; satNormal = mt.normalMap;
+            const st = createSatelliteTextures(sat.id, sat.color);
+            satMat = new THREE.MeshStandardMaterial({
+              map: st.map,
+              normalMap: st.normalMap,
+              normalScale: new THREE.Vector2(1.8, 1.8),
+              ...(st.roughnessMap
+                ? { roughnessMap: st.roughnessMap }
+                : { roughness: 0.90 }),
+              metalness: 0.0,
+              emissive: new THREE.Color('#000000'),
+              emissiveIntensity: 0.0,
+            });
           }
 
-          const satMat = new THREE.MeshStandardMaterial({
-            map: satMap,
-            normalMap: satNormal,
-            normalScale: new THREE.Vector2(0.8, 0.8),
-            roughness: 0.92,
-            metalness: 0.0,
-            emissive: sat.isArtificial ? new THREE.Color(sat.color) : new THREE.Color('#000000'),
-            emissiveIntensity: sat.isArtificial ? 0.7 : 0.0,
-          });
           const satMesh = new THREE.Mesh(satGeo, satMat);
           satMesh.position.set(sat.orbitRadius, 0, 0);
           satMesh.castShadow = true;
@@ -478,16 +495,15 @@ const SolarSystemScene = forwardRef<SceneHandle, Props>(
 
           // Satellite orbit ring
           const satOrbPts: THREE.Vector3[] = [];
-          for (let i = 0; i <= 64; i++) {
-            const a = (i / 64) * Math.PI * 2;
+          for (let i = 0; i <= 80; i++) {
+            const a = (i / 80) * Math.PI * 2;
             satOrbPts.push(new THREE.Vector3(Math.cos(a) * sat.orbitRadius, 0, Math.sin(a) * sat.orbitRadius));
           }
-          const satOrbGeo = new THREE.BufferGeometry().setFromPoints(satOrbPts);
           const satOrbMat = new THREE.LineBasicMaterial({
-            color: sat.isArtificial ? 0x3399ff : 0x223344,
-            transparent: true, opacity: sat.isArtificial ? 0.55 : 0.22, depthWrite: false,
+            color: sat.isArtificial ? 0x44aaff : 0x2a4055,
+            transparent: true, opacity: sat.isArtificial ? 0.65 : 0.28, depthWrite: false,
           });
-          mesh.add(new THREE.Line(satOrbGeo, satOrbMat));
+          mesh.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(satOrbPts), satOrbMat));
 
           satObjects.push({
             pivot: satPivot, mesh: satMesh,
@@ -636,17 +652,17 @@ const SolarSystemScene = forwardRef<SceneHandle, Props>(
           if (prev !== hitMesh) {
             if (prev) {
               const prevMat = prev.material as THREE.MeshStandardMaterial;
-              if (prevMat.emissiveIntensity !== undefined) prevMat.emissiveIntensity = 0.08;
+              if (prevMat.emissiveIntensity !== undefined) prevMat.emissiveIntensity = 0.06;
             }
             hoveredRef.current = hitMesh;
             const hitMat = hitMesh.material as THREE.MeshStandardMaterial;
-            if (hitMat.emissiveIntensity !== undefined) hitMat.emissiveIntensity = 0.38;
+            if (hitMat.emissiveIntensity !== undefined) hitMat.emissiveIntensity = 0.45;
           }
           renderer.domElement.style.cursor = 'pointer';
         } else {
           if (prev) {
             const prevMat = prev.material as THREE.MeshStandardMaterial;
-            if (prevMat.emissiveIntensity !== undefined) prevMat.emissiveIntensity = 0.08;
+            if (prevMat.emissiveIntensity !== undefined) prevMat.emissiveIntensity = 0.06;
           }
           hoveredRef.current = null;
           renderer.domElement.style.cursor = 'default';

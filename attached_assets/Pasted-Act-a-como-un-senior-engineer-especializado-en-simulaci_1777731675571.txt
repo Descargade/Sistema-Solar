@@ -1,0 +1,204 @@
+Actúa como un senior engineer especializado en simulaciones 3D científicas y render físico avanzado con Three.js.
+
+Tu objetivo es REHACER y CORREGIR la calidad visual y experiencial de una aplicación del Sistema Solar que actualmente NO cumple con estándares mínimos de realismo.
+
+---
+
+# ❗ PROBLEMA CRÍTICO ACTUAL
+La escena actual presenta:
+- Planetas con colores planos o incorrectamente iluminados
+- Falta de texturas reales o mal aplicadas
+- Sensación de objetos “dibujados” en lugar de cuerpos celestes
+- Satélites poco visibles o sin interacción real
+- Nave espacial con movimiento demasiado rápido y poco perceptible
+
+Esto es INACEPTABLE para un proyecto de nivel portfolio profesional.
+
+---
+
+# 🌍 1. REALISMO VISUAL DE PLANETAS (PRIORIDAD ABSOLUTA)
+
+## 🚫 PROHIBIDO:
+- MeshBasicMaterial para planetas
+- Colores planos sin textura
+- Iluminación sin sentido físico
+
+## ✅ OBLIGATORIO:
+
+### 🧱 MATERIAL PBR REAL
+Usar EXCLUSIVAMENTE:
+- THREE.MeshStandardMaterial o superior
+
+Cada planeta debe tener:
+- texture map (imagen real o satelital)
+- normal map (relieve visible)
+- roughness map (variación de superficie)
+- optional emissive map (Tierra nocturna)
+
+---
+
+### 💡 ILUMINACIÓN FÍSICAMENTE CORRECTA
+- El Sol debe ser la única fuente principal de luz (PointLight fuerte)
+- AmbientLight mínima (solo soporte)
+- Sombras activadas correctamente
+- Reflejos coherentes en planetas rocosos y gaseosos
+
+---
+
+### 🌌 IMPRESIÓN VISUAL
+Los planetas deben:
+- Verse esféricos, con volumen real
+- Tener profundidad visual real
+- NO verse planos ni con bordes visibles
+- Tener transición suave de luz/sombra (terminador planetario visible)
+
+---
+
+# 🌙 2. SATÉLITES NATURALES (MEJORADOS + COMPLETOS)
+
+## OBLIGATORIO:
+
+### 🌍 TIERRA
+Agregar y representar correctamente:
+- 🌙 Luna (OBLIGATORIO, visible y detallada)
+
+### 🪐 OTROS PLANETAS:
+- Júpiter: Io, Europa, Ganímedes
+- Saturno: Titán, Encélado
+
+---
+
+## MEJORAS CRÍTICAS:
+- Cada satélite debe tener:
+  - textura básica o material diferenciado
+  - iluminación coherente
+  - órbita visible y suave
+- Deben poder:
+  - ser seleccionados (click)
+  - hacer zoom hacia ellos
+  - mostrar información
+
+---
+
+# 🛰️ 3. SATÉLITES ARTIFICIALES (TIERRA)
+
+Incluir:
+- ARSAT-1
+- Hubble Space Telescope
+- ISS
+
+## REQUISITOS:
+- Órbitas visibles
+- Movimiento continuo suave
+- Diferenciación visual clara respecto a satélites naturales
+- Interacción (click + panel de info)
+
+---
+
+# 🚀 4. MODO VIAJE ESPACIAL (RE-DISEÑADO – MUY IMPORTANTE)
+
+## ❗ PROBLEMA ACTUAL:
+La nave se mueve demasiado rápido y no permite apreciar el recorrido.
+
+## ✅ NUEVO COMPORTAMIENTO OBLIGATORIO:
+
+### 🛸 VELOCIDAD
+- Movimiento MUY LENTO y cinematográfico
+- El usuario debe poder OBSERVAR claramente el trayecto
+
+---
+
+### 📈 TRAZADO DEL VIAJE (CRÍTICO)
+- Debe dibujarse una CURVA visible del recorrido
+- Usar CatmullRomCurve3 o Bezier curve
+- La trayectoria debe quedarse visible en el espacio
+- Estilo: “ruta de exploración espacial”
+
+---
+
+### 🎥 CÁMARA
+- Seguimiento suave (lerp, no snap)
+- Movimiento cinematográfico estable
+- Sin cambios bruscos de posición
+
+---
+
+### 🧠 NARRACIÓN (Web Speech API)
+- Narración en español
+- Se activa al llegar a cada planeta
+- Texto claro y educativo
+
+Ejemplo:
+“Ahora nos acercamos lentamente a Marte, el planeta rojo…”
+
+---
+
+# 🌠 5. EXPERIENCIA VISUAL GLOBAL
+
+- Fondo espacial con estrellas dinámicas (NO imagen fija)
+- Saturno con anillos realistas y transparentes
+- Zoom extremo permitido sin romper escena
+- Transiciones suaves en TODO momento
+- Efectos de profundidad leves (parallax o cámara)
+
+---
+
+# 🎮 6. INTERACCIÓN
+
+- Click en planeta → zoom suave + info + satélites visibles
+- Click en satélite → info individual
+- Hover con highlight suave
+- Todo debe ser animado, nunca instantáneo
+
+---
+
+# 🧠 7. INFORMACIÓN EDUCATIVA
+
+Cada cuerpo celeste debe incluir:
+- descripción
+- tamaño
+- distancia
+- temperatura
+- satélites
+- curiosidades
+
+UI:
+- panel moderno tipo glassmorphism
+- navegación por secciones o tabs
+
+---
+
+# ⚡ 8. RENDIMIENTO
+
+- Mantener FPS estable
+- Optimizar texturas
+- Evitar sobrecarga visual innecesaria
+- Compatible con Replit y navegadores comunes
+
+---
+
+# 🎨 9. DIRECCIÓN ARTÍSTICA
+
+- Estilo: realista científico (NO cartoon, NO arcade)
+- Iluminación espacial coherente
+- UI limpia, moderna, minimalista
+- Sensación de simulador profesional
+
+---
+
+# ❗ PRIORIDAD ABSOLUTA (NO NEGOCIABLE)
+
+1. REALISMO DE PLANETAS (TEXTURAS + PBR + LUZ)
+2. SATÉLITES VISIBLES Y FUNCIONALES (INCLUYE LUNA)
+3. NAVE CON RECORRIDO LENTO Y TRAZADO VISUAL
+4. CÁMARA CINEMATOGRÁFICA SUAVE
+5. UX PROFESIONAL
+
+---
+
+# 📦 ENTREGA
+
+- Código completo funcional
+- Estructura limpia
+- Comentarios claros
+- Listo para Vercel / GitHub Pages

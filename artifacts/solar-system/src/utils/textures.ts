@@ -3,6 +3,7 @@ import * as THREE from 'three';
 export interface PlanetTextures {
   map: THREE.CanvasTexture;
   normalMap: THREE.CanvasTexture;
+  roughnessMap?: THREE.CanvasTexture;
 }
 
 // ── Noise helpers ─────────────────────────────────────────────────────────────
@@ -34,6 +35,34 @@ function fbm(x: number, y: number, octaves = 4): number {
     a *= 0.5; f *= 2.07;
   }
   return v;
+}
+
+// ── Core: heights → roughness map ─────────────────────────────────────────────
+
+function heightsToRoughnessMap(
+  heights: Float32Array,
+  W: number, H: number,
+  base = 0.78,
+  variation = 0.22
+): THREE.CanvasTexture {
+  const canvas = document.createElement('canvas');
+  canvas.width = W; canvas.height = H;
+  const ctx = canvas.getContext('2d')!;
+  const img = ctx.createImageData(W, H);
+  const d = img.data;
+  for (let y = 0; y < H; y++) {
+    for (let x = 0; x < W; x++) {
+      const h = heights[y * W + x] ?? 0.5;
+      const r = Math.max(0, Math.min(255, Math.round((base + (h - 0.5) * variation * 2) * 255)));
+      const p = (y * W + x) * 4;
+      d[p] = d[p + 1] = d[p + 2] = r;
+      d[p + 3] = 255;
+    }
+  }
+  ctx.putImageData(img, 0, 0);
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.colorSpace = THREE.LinearSRGBColorSpace;
+  return tex;
 }
 
 // ── Core: heights → normal map ────────────────────────────────────────────────
@@ -639,6 +668,264 @@ export function createMoonTextures(): PlanetTextures {
   const map = new THREE.CanvasTexture(canvas);
   const normalMap = heightsToNormalMap(heights, NW, NH, 4.0);
   return { map, normalMap };
+}
+
+// ── Io ────────────────────────────────────────────────────────────────────────
+
+function createIoTextures(): PlanetTextures {
+  const W = 512, H = 256;
+  const NW = 256, NH = 128;
+  const heights = new Float32Array(NW * NH);
+  for (let y = 0; y < NH; y++) {
+    for (let x = 0; x < NW; x++) {
+      heights[y * NW + x] = fbm(x / NW * 3, y / NH * 3, 4) * 0.5 + 0.25;
+    }
+  }
+  const canvas = document.createElement('canvas');
+  canvas.width = W; canvas.height = H;
+  const ctx = canvas.getContext('2d')!;
+  const img = ctx.createImageData(W, H);
+  const d = img.data;
+  for (let y = 0; y < H; y++) {
+    for (let x = 0; x < W; x++) {
+      const h = Math.max(0, Math.min(1, heights[Math.floor(y/H*NH)*NW+Math.floor(x/W*NW)]));
+      const p = (y * W + x) * 4;
+      if (h < 0.3) { d[p]=80; d[p+1]=60; d[p+2]=10; }
+      else if (h < 0.55) { d[p]=Math.round(210+h*30); d[p+1]=Math.round(150+h*20); d[p+2]=Math.round(20+h*10); }
+      else { d[p]=Math.round(240+h*10); d[p+1]=Math.round(200+h*20); d[p+2]=Math.round(50+h*20); }
+      d[p+3]=255;
+    }
+  }
+  ctx.putImageData(img, 0, 0);
+  const calderas: [number,number,number][] = Array.from({length:18},()=>[Math.random()*W,Math.random()*H,5+Math.random()*18]);
+  calderas.forEach(([cx,cy,cr])=>{
+    const g=ctx.createRadialGradient(cx,cy,0,cx,cy,cr);
+    g.addColorStop(0,'rgba(20,10,5,0.95)');g.addColorStop(0.4,'rgba(180,60,10,0.6)');g.addColorStop(1,'rgba(0,0,0,0)');
+    ctx.fillStyle=g; ctx.beginPath(); ctx.ellipse(cx,cy,cr,cr*0.7,Math.random()*Math.PI,0,Math.PI*2); ctx.fill();
+  });
+  addNoiseOverlay(ctx,W,H,0.06,4);
+  return { map: new THREE.CanvasTexture(canvas), normalMap: heightsToNormalMap(heights,NW,NH,2.5),
+           roughnessMap: heightsToRoughnessMap(heights,NW,NH,0.75,0.2) };
+}
+
+// ── Europa ────────────────────────────────────────────────────────────────────
+
+function createEuropaTextures(): PlanetTextures {
+  const W = 512, H = 256;
+  const NW = 256, NH = 128;
+  const heights = new Float32Array(NW * NH);
+  for (let y = 0; y < NH; y++) {
+    for (let x = 0; x < NW; x++) {
+      heights[y*NW+x] = snoise(x/NW,y/NH,3)*0.25+0.5;
+    }
+  }
+  const canvas = document.createElement('canvas');
+  canvas.width=W; canvas.height=H;
+  const ctx=canvas.getContext('2d')!;
+  const img=ctx.createImageData(W,H); const d=img.data;
+  for (let y=0;y<H;y++) for (let x=0;x<W;x++) {
+    const p=(y*W+x)*4; const h=heights[Math.floor(y/H*NH)*NW+Math.floor(x/W*NW)];
+    d[p]=Math.round(200+h*40); d[p+1]=Math.round(215+h*30); d[p+2]=Math.round(230+h*20); d[p+3]=255;
+  }
+  ctx.putImageData(img,0,0);
+  ctx.strokeStyle='rgba(120,60,30,0.55)'; ctx.lineWidth=1.5;
+  for (let i=0;i<22;i++) {
+    const x0=Math.random()*W, y0=Math.random()*H, l=40+Math.random()*120;
+    const a=Math.random()*Math.PI*2;
+    ctx.beginPath(); ctx.moveTo(x0,y0);
+    ctx.bezierCurveTo(x0+Math.cos(a+0.5)*l*0.4,y0+Math.sin(a+0.5)*l*0.4,
+      x0+Math.cos(a-0.3)*l*0.7,y0+Math.sin(a-0.3)*l*0.7,x0+Math.cos(a)*l,y0+Math.sin(a)*l);
+    ctx.stroke();
+  }
+  addNoiseOverlay(ctx,W,H,0.04,3);
+  return { map: new THREE.CanvasTexture(canvas), normalMap: heightsToNormalMap(heights,NW,NH,1.5),
+           roughnessMap: heightsToRoughnessMap(heights,NW,NH,0.55,0.1) };
+}
+
+// ── Ganymede ──────────────────────────────────────────────────────────────────
+
+function createGanymedeTextures(): PlanetTextures {
+  const W=512,H=256,NW=256,NH=128;
+  const heights=new Float32Array(NW*NH);
+  for (let y=0;y<NH;y++) for (let x=0;x<NW;x++) heights[y*NW+x]=fbm(x/NW*2,y/NH*2,4)*0.55+0.22;
+  const canvas=document.createElement('canvas'); canvas.width=W; canvas.height=H;
+  const ctx=canvas.getContext('2d')!;
+  const img=ctx.createImageData(W,H); const d=img.data;
+  for (let y=0;y<H;y++) for (let x=0;x<W;x++) {
+    const h=Math.max(0,Math.min(1,heights[Math.floor(y/H*NH)*NW+Math.floor(x/W*NW)]));
+    const c=Math.round(60+h*100); const p=(y*W+x)*4;
+    d[p]=c+8; d[p+1]=c+4; d[p+2]=c-4; d[p+3]=255;
+  }
+  ctx.putImageData(img,0,0);
+  ctx.strokeStyle='rgba(160,150,130,0.3)'; ctx.lineWidth=2;
+  for (let i=0;i<12;i++) {
+    const y0=(i/12)*H; ctx.beginPath(); ctx.moveTo(0,y0+Math.sin(i)*8);
+    for (let x=0;x<W;x+=30) ctx.lineTo(x,y0+Math.sin(x*0.02+i)*12+(Math.random()-0.5)*6);
+    ctx.stroke();
+  }
+  addNoiseOverlay(ctx,W,H,0.08,4);
+  return { map: new THREE.CanvasTexture(canvas), normalMap: heightsToNormalMap(heights,NW,NH,3.0),
+           roughnessMap: heightsToRoughnessMap(heights,NW,NH,0.82,0.15) };
+}
+
+// ── Callisto ──────────────────────────────────────────────────────────────────
+
+function createCallistoTextures(): PlanetTextures {
+  const W=512,H=256,NW=256,NH=128;
+  const heights=new Float32Array(NW*NH);
+  for (let y=0;y<NH;y++) for (let x=0;x<NW;x++) heights[y*NW+x]=fbm(x/NW*2,y/NH*2,5)*0.4+0.3;
+  const craters: [number,number,number][]=Array.from({length:40},()=>[Math.random()*NW,Math.random()*NH,3+Math.random()*14]);
+  craters.forEach(([cx,cy,cr])=>{ for (let y2=Math.max(0,cy-cr*1.5);y2<Math.min(NH,cy+cr*1.5);y2++) for (let x2=Math.max(0,cx-cr*1.5);x2<Math.min(NW,cx+cr*1.5);x2++) { const d=Math.sqrt((x2-cx)**2+(y2-cy)**2); if (d<cr) heights[Math.floor(y2)*NW+Math.floor(x2)]-=(1-(d/cr)**2)*0.5; }});
+  const canvas=document.createElement('canvas'); canvas.width=W; canvas.height=H;
+  const ctx=canvas.getContext('2d')!; const img=ctx.createImageData(W,H); const d=img.data;
+  for (let y=0;y<H;y++) for (let x=0;x<W;x++) {
+    const h=Math.max(0,Math.min(1,heights[Math.floor(y/H*NH)*NW+Math.floor(x/W*NW)]));
+    const c=Math.round(35+h*80); const p=(y*W+x)*4;
+    d[p]=c; d[p+1]=c-3; d[p+2]=c-6; d[p+3]=255;
+  }
+  ctx.putImageData(img,0,0);
+  craters.forEach(([cx,cy,cr])=>{ const sx=cx/NW*W,sy=cy/NH*H,sr=cr/NW*W; ctx.beginPath(); ctx.arc(sx,sy,sr,0,Math.PI*2); ctx.fillStyle='rgba(15,12,10,0.6)'; ctx.fill(); ctx.strokeStyle='rgba(140,130,120,0.4)'; ctx.lineWidth=1; ctx.stroke(); });
+  addNoiseOverlay(ctx,W,H,0.06,5);
+  return { map: new THREE.CanvasTexture(canvas), normalMap: heightsToNormalMap(heights,NW,NH,3.5),
+           roughnessMap: heightsToRoughnessMap(heights,NW,NH,0.88,0.1) };
+}
+
+// ── Titan ─────────────────────────────────────────────────────────────────────
+
+function createTitanTextures(): PlanetTextures {
+  const W=512,H=256,NW=256,NH=128;
+  const heights=new Float32Array(NW*NH);
+  for (let y=0;y<NH;y++) for (let x=0;x<NW;x++) heights[y*NW+x]=snoise(x/NW,y/NH,2)*0.3+0.35;
+  const canvas=document.createElement('canvas'); canvas.width=W; canvas.height=H;
+  const ctx=canvas.getContext('2d')!;
+  const g=ctx.createLinearGradient(0,0,0,H);
+  g.addColorStop(0,'#8B4513'); g.addColorStop(0.3,'#A0522D'); g.addColorStop(0.5,'#CD853F');
+  g.addColorStop(0.7,'#A0522D'); g.addColorStop(1,'#8B4513');
+  ctx.fillStyle=g; ctx.fillRect(0,0,W,H);
+  for (let y=0;y<H;y+=6) {
+    const wave=Math.sin(y*0.08)*10; const n=snoise(y/H,0.5,2)*0.12;
+    ctx.fillStyle=`rgba(${Math.round(180+n*40)},${Math.round(100+n*20)},${Math.round(20+n*10)},0.18)`;
+    ctx.fillRect(wave,y,W,6);
+  }
+  const polar=H*0.12;
+  [0,H-polar].forEach(yy=>{ const pg=ctx.createLinearGradient(0,yy,0,yy+polar);
+    pg.addColorStop(0,'rgba(220,200,160,0.7)'); pg.addColorStop(1,'rgba(0,0,0,0)');
+    ctx.fillStyle=pg; ctx.fillRect(0,yy,W,polar); });
+  addNoiseOverlay(ctx,W,H,0.06,3);
+  return { map: new THREE.CanvasTexture(canvas), normalMap: heightsToNormalMap(heights,NW,NH,1.2),
+           roughnessMap: heightsToRoughnessMap(heights,NW,NH,0.92,0.05) };
+}
+
+// ── Enceladus ─────────────────────────────────────────────────────────────────
+
+function createEnceladusTextures(): PlanetTextures {
+  const W=512,H=256,NW=256,NH=128;
+  const heights=new Float32Array(NW*NH);
+  for (let y=0;y<NH;y++) for (let x=0;x<NW;x++) heights[y*NW+x]=snoise(x/NW,y/NH,4)*0.15+0.5;
+  const canvas=document.createElement('canvas'); canvas.width=W; canvas.height=H;
+  const ctx=canvas.getContext('2d')!;
+  const g=ctx.createLinearGradient(0,0,0,H);
+  g.addColorStop(0,'#f0f8ff'); g.addColorStop(0.5,'#e8f4ff'); g.addColorStop(1,'#f0f8ff');
+  ctx.fillStyle=g; ctx.fillRect(0,0,W,H);
+  ctx.strokeStyle='rgba(100,120,200,0.35)'; ctx.lineWidth=1.2;
+  for (let i=0;i<14;i++) {
+    const x0=Math.random()*W,y0=H*0.6+Math.random()*H*0.35;
+    ctx.beginPath(); ctx.moveTo(x0,y0);
+    ctx.lineTo(x0+(Math.random()-0.5)*40,y0-20-Math.random()*30); ctx.stroke();
+  }
+  addNoiseOverlay(ctx,W,H,0.03,4);
+  return { map: new THREE.CanvasTexture(canvas), normalMap: heightsToNormalMap(heights,NW,NH,1.0),
+           roughnessMap: heightsToRoughnessMap(heights,NW,NH,0.45,0.1) };
+}
+
+// ── Fobos ─────────────────────────────────────────────────────────────────────
+
+function createFobosTextures(): PlanetTextures {
+  const W=256,H=128,NW=128,NH=64;
+  const heights=new Float32Array(NW*NH);
+  for (let y=0;y<NH;y++) for (let x=0;x<NW;x++) heights[y*NW+x]=fbm(x/NW*3,y/NH*3,4)*0.5+0.25;
+  const craters: [number,number,number][]=[[64,32,22],[30,25,10],[85,45,8],[50,15,6],[100,50,7],[15,45,5],...Array.from({length:15},():[ number,number,number]=>[Math.random()*NW,Math.random()*NH,2+Math.random()*6])];
+  craters.forEach(([cx,cy,cr])=>{ for (let y2=Math.max(0,cy-cr*2);y2<Math.min(NH,cy+cr*2);y2++) for (let x2=Math.max(0,cx-cr*2);x2<Math.min(NW,cx+cr*2);x2++) { const d=Math.sqrt((x2-cx)**2+(y2-cy)**2); if (d<cr) heights[Math.floor(y2)*NW+Math.floor(x2)]-=(1-(d/cr)**2)*0.55; }});
+  const canvas=document.createElement('canvas'); canvas.width=W; canvas.height=H;
+  const ctx=canvas.getContext('2d')!; const img=ctx.createImageData(W,H); const d=img.data;
+  for (let y=0;y<H;y++) for (let x=0;x<W;x++) {
+    const h=Math.max(0,Math.min(1,heights[Math.floor(y/H*NH)*NW+Math.floor(x/W*NW)]));
+    const c=Math.round(45+h*80); const p=(y*W+x)*4;
+    d[p]=c+5; d[p+1]=c+3; d[p+2]=c-2; d[p+3]=255;
+  }
+  ctx.putImageData(img,0,0);
+  craters.forEach(([cx,cy,cr])=>{ const sx=cx/NW*W,sy=cy/NH*H,sr=cr/NW*W*1.5; ctx.beginPath(); ctx.arc(sx,sy,sr,0,Math.PI*2); ctx.fillStyle='rgba(20,15,10,0.55)'; ctx.fill(); ctx.strokeStyle='rgba(160,150,130,0.3)'; ctx.lineWidth=0.8; ctx.stroke(); });
+  addNoiseOverlay(ctx,W,H,0.1,5);
+  return { map: new THREE.CanvasTexture(canvas), normalMap: heightsToNormalMap(heights,NW,NH,4.5),
+           roughnessMap: heightsToRoughnessMap(heights,NW,NH,0.88,0.1) };
+}
+
+// ── Triton ────────────────────────────────────────────────────────────────────
+
+function createTritonTextures(): PlanetTextures {
+  const W=512,H=256,NW=256,NH=128;
+  const heights=new Float32Array(NW*NH);
+  for (let y=0;y<NH;y++) for (let x=0;x<NW;x++) heights[y*NW+x]=fbm(x/NW*3,y/NH*3,4)*0.45+0.28;
+  const canvas=document.createElement('canvas'); canvas.width=W; canvas.height=H;
+  const ctx=canvas.getContext('2d')!; const img=ctx.createImageData(W,H); const d=img.data;
+  for (let y=0;y<H;y++) for (let x=0;x<W;x++) {
+    const h=Math.max(0,Math.min(1,heights[Math.floor(y/H*NH)*NW+Math.floor(x/W*NW)]));
+    const polar=Math.abs(y/H-0.5)*2; const p=(y*W+x)*4;
+    if (polar>0.7) { const s=(polar-0.7)/0.3; d[p]=Math.round(210+s*35); d[p+1]=Math.round(205+s*30); d[p+2]=Math.round(220+s*30); }
+    else { d[p]=Math.round(140+h*60); d[p+1]=Math.round(120+h*50); d[p+2]=Math.round(130+h*55); }
+    d[p+3]=255;
+  }
+  ctx.putImageData(img,0,0);
+  for (let i=0;i<200;i++) {
+    const x=Math.random()*W,y=H*0.2+Math.random()*H*0.6,s=3+Math.random()*10;
+    ctx.fillStyle=`rgba(180,160,175,${0.12+Math.random()*0.15})`;
+    ctx.beginPath(); ctx.ellipse(x,y,s,s*0.6,Math.random()*Math.PI*2,0,Math.PI*2); ctx.fill();
+  }
+  addNoiseOverlay(ctx,W,H,0.06,4);
+  return { map: new THREE.CanvasTexture(canvas), normalMap: heightsToNormalMap(heights,NW,NH,2.8),
+           roughnessMap: heightsToRoughnessMap(heights,NW,NH,0.80,0.15) };
+}
+
+// ── Generic rocky satellite ───────────────────────────────────────────────────
+
+function createRockySatelliteTextures(baseColor: string): PlanetTextures {
+  const W=256,H=128,NW=128,NH=64;
+  const heights=new Float32Array(NW*NH);
+  for (let y=0;y<NH;y++) for (let x=0;x<NW;x++) heights[y*NW+x]=fbm(x/NW*2,y/NH*2,4)*0.5+0.25;
+  const craters: [number,number,number][]=Array.from({length:20},()=>[Math.random()*NW,Math.random()*NH,2+Math.random()*9]);
+  craters.forEach(([cx,cy,cr])=>{ for (let y2=Math.max(0,cy-cr*1.5);y2<Math.min(NH,cy+cr*1.5);y2++) for (let x2=Math.max(0,cx-cr*1.5);x2<Math.min(NW,cx+cr*1.5);x2++) { const d=Math.sqrt((x2-cx)**2+(y2-cy)**2); if (d<cr) heights[Math.floor(y2)*NW+Math.floor(x2)]-=(1-(d/cr)**2)*0.4; }});
+  const r=parseInt(baseColor.slice(1,3),16)||150;
+  const g=parseInt(baseColor.slice(3,5),16)||145;
+  const b=parseInt(baseColor.slice(5,7),16)||135;
+  const canvas=document.createElement('canvas'); canvas.width=W; canvas.height=H;
+  const ctx=canvas.getContext('2d')!; const img=ctx.createImageData(W,H); const data=img.data;
+  for (let y=0;y<H;y++) for (let x=0;x<W;x++) {
+    const h=Math.max(0,Math.min(1,heights[Math.floor(y/H*NH)*NW+Math.floor(x/W*NW)]));
+    const t=h*0.5+0.5; const p=(y*W+x)*4;
+    data[p]=Math.round(r*t*0.9); data[p+1]=Math.round(g*t*0.9); data[p+2]=Math.round(b*t*0.9); data[p+3]=255;
+  }
+  ctx.putImageData(img,0,0);
+  craters.forEach(([cx,cy,cr])=>{ const sx=cx/NW*W,sy=cy/NH*H,sr=cr/NW*W; ctx.beginPath(); ctx.arc(sx,sy,sr,0,Math.PI*2); ctx.fillStyle='rgba(0,0,0,0.45)'; ctx.fill(); ctx.strokeStyle='rgba(200,195,185,0.22)'; ctx.lineWidth=0.8; ctx.stroke(); });
+  addNoiseOverlay(ctx,W,H,0.09,5);
+  return { map: new THREE.CanvasTexture(canvas), normalMap: heightsToNormalMap(heights,NW,NH,3.5),
+           roughnessMap: heightsToRoughnessMap(heights,NW,NH,0.85,0.12) };
+}
+
+// ── Satellite dispatcher ──────────────────────────────────────────────────────
+
+export function createSatelliteTextures(id: string, color: string): PlanetTextures {
+  switch (id) {
+    case 'luna':      return createMoonTextures();
+    case 'io':        return createIoTextures();
+    case 'europa':    return createEuropaTextures();
+    case 'ganymede':  return createGanymedeTextures();
+    case 'callisto':  return createCallistoTextures();
+    case 'titan':     return createTitanTextures();
+    case 'enceladus': return createEnceladusTextures();
+    case 'fobos':     return createFobosTextures();
+    case 'triton':    return createTritonTextures();
+    default:          return createRockySatelliteTextures(color);
+  }
 }
 
 // ── Saturn rings ─────────────────────────────────────────────────────────────
