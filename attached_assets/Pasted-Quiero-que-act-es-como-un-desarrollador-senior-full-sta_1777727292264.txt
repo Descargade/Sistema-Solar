@@ -1,0 +1,118 @@
+Quiero que actúes como un desarrollador senior full-stack especializado en experiencias web interactivas 3D.
+
+Desarrolla una aplicación web avanzada sobre el Sistema Solar, con un alto nivel de realismo visual, inspirada en plataformas como Solar System Scope, pero optimizada para ejecutarse correctamente en entornos limitados (como Replit gratuito).
+
+### 🎯 OBJETIVO
+Crear una web interactiva, moderna y profesional que represente el Sistema Solar en 3D, con información educativa, ideal para ser utilizada como proyecto de portafolio y desplegada en Vercel o GitHub Pages.
+
+---
+
+### 🧱 STACK TECNOLÓGICO
+- Frontend: HTML5, CSS3, JavaScript
+- Librería 3D: Three.js (OBLIGATORIO)
+- Sin backend complejo (solo frontend optimizado)
+- Sin dependencias pesadas innecesarias
+
+---
+
+### 🌌 FUNCIONALIDADES PRINCIPALES
+
+#### 1. VISUALIZACIÓN 3D DEL SISTEMA SOLAR
+- Renderizar el Sol y los 8 planetas con escalas proporcionales aproximadas
+- Órbitas animadas alrededor del Sol
+- Rotación sobre su eje de cada planeta
+- Texturas realistas (usar texturas públicas optimizadas)
+- Fondo espacial con estrellas
+
+#### 2. INTERACCIÓN
+- Permitir hacer zoom in/out con scroll
+- Permitir rotar la cámara (OrbitControls)
+- Click en cada planeta para seleccionarlo
+- Al seleccionar:
+  - Hacer zoom automático hacia el planeta
+  - Mostrar panel de información
+
+#### 3. PANEL DE INFORMACIÓN (UI/UX MODERNA)
+- Mostrar:
+  - Nombre del planeta
+  - Descripción
+  - Tamaño
+  - Distancia al Sol
+  - Número de satélites
+- Diseño tipo glassmorphism o minimalista moderno
+- Animaciones suaves
+
+---
+
+### 🌙 SATÉLITES NATURALES
+- Mostrar los satélites más importantes de cada planeta
+- Ejemplos:
+  - Tierra: Luna
+  - Júpiter: Io, Europa, Ganímedes
+  - Saturno: Titán, Encélado
+- Deben aparecer al seleccionar el planeta
+- Representarlos visualmente orbitando el planeta (simplificado pero funcional)
+
+---
+
+### 🛰️ SATÉLITES ARTIFICIALES (TIERRA)
+Para el planeta Tierra, agregar al menos 3 satélites artificiales importantes:
+- ARSAT-1
+- Hubble Space Telescope
+- ISS (Estación Espacial Internacional)
+
+Requisitos:
+- Mostrar órbitas simples
+- Incluirlos en el panel informativo
+- Diferenciar visualmente de satélites naturales
+
+---
+
+### 🎨 DISEÑO Y EXPERIENCIA
+- UI moderna, limpia y profesional
+- Responsive (adaptable a desktop principalmente, mobile opcional)
+- Tipografía clara (Google Fonts)
+- Buen uso del DOM (estructura semántica)
+- Loader inicial mientras carga la escena
+
+---
+
+### ⚡ OPTIMIZACIÓN (MUY IMPORTANTE)
+- Código modular y organizado
+- Evitar sobrecargar con texturas pesadas
+- Mantener rendimiento fluido en navegador
+- No usar frameworks pesados como React (para evitar límites en Replit)
+
+---
+
+### 📁 ESTRUCTURA DEL PROYECTO
+Organizar en:
+- index.html
+- style.css
+- script.js (o módulos separados si es necesario)
+- carpeta /assets (texturas)
+
+---
+
+### 🌍 IDIOMA
+Toda la interfaz y textos deben estar en español.
+
+---
+
+### 🚀 BONUS (SI ES POSIBLE SIN ROMPER RENDIMIENTO)
+- Botón para reiniciar cámara
+- Control de velocidad de órbitas
+- Modo oscuro (por defecto)
+
+---
+
+### 📦 ENTREGA
+- Código completo listo para ejecutar
+- Comentarios explicativos en el código
+- Instrucciones breves para desplegar en Vercel o GitHub Pages
+
+---
+
+IMPORTANTE:
+- Priorizar que funcione correctamente antes que agregar demasiadas features
+- El resultado debe ser visualmente atractivo y usable para portafolio profesional
